@@ -51,6 +51,11 @@ export function RunPanel() {
 
   const testRuns = selectedTestId ? (runs[selectedTestId] ?? []) : [];
 
+  const hasLiveRunBuffer =
+    currentRunLog.length > 0 ||
+    currentRunScreenshots.length > 0 ||
+    currentRunHttpFailures.length > 0;
+
   useEffect(() => {
     if (testRuns.length > 0 && !selectedRun) {
       selectRun(testRuns[0]);
@@ -58,9 +63,10 @@ export function RunPanel() {
     // Use testRuns[0]?.id to re-run if the latest run changes, not just the count
   }, [testRuns[0]?.id, selectedRun, selectRun]);
 
-  const displayLog = isRunning ? currentRunLog : selectedRun?.log ?? [];
-  const displayScreenshots = isRunning ? currentRunScreenshots : selectedRun?.screenshots ?? [];
-  const displayHttpFailures = isRunning ? currentRunHttpFailures : selectedRun?.httpFailures ?? [];
+  const showLiveBuffer = isRunning || (!selectedRun && hasLiveRunBuffer);
+  const displayLog = showLiveBuffer ? currentRunLog : selectedRun?.log ?? [];
+  const displayScreenshots = showLiveBuffer ? currentRunScreenshots : selectedRun?.screenshots ?? [];
+  const displayHttpFailures = showLiveBuffer ? currentRunHttpFailures : selectedRun?.httpFailures ?? [];
 
   if (!selectedTestId) {
     return (
@@ -129,13 +135,13 @@ export function RunPanel() {
             <span className="text-xs font-medium text-slate-400">Screenshots</span>
           </div>
           <div className="h-[calc(100%-28px)]">
-            {selectedRun && !isRunning ? (
+            {selectedRun && !showLiveBuffer ? (
               <Screenshots
                 testId={selectedTestId}
                 runId={selectedRun.id}
                 screenshots={displayScreenshots}
               />
-            ) : isRunning ? (
+            ) : showLiveBuffer ? (
               <Screenshots
                 testId={selectedTestId}
                 runId="current"

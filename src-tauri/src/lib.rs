@@ -277,6 +277,37 @@ fn copy_runner_to_app_dir(app: AppHandle, app_data_dir: String) -> Result<(), St
     Ok(())
 }
 
+fn resolve_runner_entry(app: &AppHandle, app_data_dir: &str) -> Result<PathBuf, String> {
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    // Development path: keep runner in its package so ESM imports resolve via runner/node_modules.
+    let dev_runner_dir = manifest_dir.join("..").join("runner");
+    let dev_runner_entry = dev_runner_dir.join("dist").join("runner.js");
+    if dev_runner_entry.exists() && dev_runner_dir.join("node_modules").exists() {
+        return Ok(dev_runner_entry);
+    }
+
+    // Production path: bundled resource. Run from resource dir so adjacent node_modules can be resolved if bundled.
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let resource_runner = resource_dir.join("runner.js");
+        if resource_runner.exists() {
+            return Ok(resource_runner);
+        }
+    }
+
+    // Last fallback: app-data runner copied by legacy flow.
+    let app_data_runner = PathBuf::from(app_data_dir).join("runner.js");
+    if app_data_runner.exists() {
+        return Ok(app_data_runner);
+    }
+
+    Err(format!(
+        "runner.js was not found in expected locations. Checked: {}, bundled resource dir, and {}. Run 'npm run bundle-runner' from the project root and retry.",
+        dev_runner_entry.to_string_lossy(),
+        app_data_runner.to_string_lossy()
+    ))
+}
+
 #[tauri::command]
 fn run_test(
     app: AppHandle,
@@ -284,6 +315,8 @@ fn run_test(
     settings: Settings,
     app_data_dir: String,
 ) -> Result<String, String> {
+    let runner_path = resolve_runner_entry(&app, &app_data_dir)?;
+
     let run_id = uuid::Uuid::new_v4().to_string();
     let run_dir = PathBuf::from(&app_data_dir)
         .join("runs")
@@ -322,8 +355,6 @@ fn run_test(
     });
     let config_str = serde_json::to_string(&config).map_err(|e| e.to_string())?;
 
-    let runner_path = PathBuf::from(&app_data_dir).join("runner.js");
-
     let app_handle = app.clone();
     let run_id_clone = run_id.clone();
     let test_id = test.id.clone();
@@ -357,6 +388,46 @@ fn run_test(
                     drop(stdin);
                 }
 
+                let saw_terminal_event = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+                let stderr_lines: std::sync::Arc<std::sync::Mutex<Vec<String>>> =
+                    std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+
+                // Read stderr in parallel so failures are visible in the UI.
+                let stderr_handle = if let Some(stderr) = child.stderr.take() {
+                    let app_handle = app_handle.clone();
+                    let run_id_for_stderr = run_id_clone.clone();
+                    let stderr_lines = stderr_lines.clone();
+                    Some(std::thread::spawn(move || {
+                        use std::io::BufRead;
+                        let reader = std::io::BufReader::new(stderr);
+                        for line in reader.lines() {
+                            if let Ok(l) = line {
+                                let trimmed = l.trim();
+                                if trimmed.is_empty() {
+                                    continue;
+                                }
+
+                                if let Ok(mut lines) = stderr_lines.lock() {
+                                    lines.push(trimmed.to_string());
+                                }
+
+                                let _ = app_handle.emit(
+                                    "run-event",
+                                    serde_json::json!({
+                                        "type": "log",
+                                        "level": "error",
+                                        "message": format!("runner stderr: {}", trimmed),
+                                        "timestamp": chrono::Utc::now().to_rfc3339(),
+                                        "runId": run_id_for_stderr.clone(),
+                                    }),
+                                );
+                            }
+                        }
+                    }))
+                } else {
+                    None
+                };
+
                 // Read stdout line by line and emit events
                 if let Some(stdout) = child.stdout.take() {
                     use std::io::BufRead;
@@ -365,7 +436,23 @@ fn run_test(
                         match line {
                             Ok(l) if !l.trim().is_empty() => {
                                 if let Ok(event) = serde_json::from_str::<serde_json::Value>(&l) {
+                                    if let Some(event_type) = event.get("type").and_then(|v| v.as_str()) {
+                                        if event_type == "complete" || event_type == "error" {
+                                            saw_terminal_event.store(true, std::sync::atomic::Ordering::Relaxed);
+                                        }
+                                    }
                                     let _ = app_handle.emit("run-event", event);
+                                } else {
+                                    let _ = app_handle.emit(
+                                        "run-event",
+                                        serde_json::json!({
+                                            "type": "log",
+                                            "level": "warn",
+                                            "message": format!("runner stdout: {}", l),
+                                            "timestamp": chrono::Utc::now().to_rfc3339(),
+                                            "runId": run_id_clone.clone(),
+                                        }),
+                                    );
                                 }
                             }
                             _ => {}
@@ -373,7 +460,43 @@ fn run_test(
                     }
                 }
 
-                let _ = child.wait();
+                let wait_result = child.wait();
+
+                if let Some(handle) = stderr_handle {
+                    let _ = handle.join();
+                }
+
+                let no_terminal_event = !saw_terminal_event.load(std::sync::atomic::Ordering::Relaxed);
+                if no_terminal_event {
+                    let stderr_summary = stderr_lines
+                        .lock()
+                        .ok()
+                        .and_then(|lines| {
+                            if lines.is_empty() {
+                                None
+                            } else {
+                                Some(lines.join(" | "))
+                            }
+                        });
+                    let wait_msg = match wait_result {
+                        Ok(status) => format!("Runner exited with status: {}", status),
+                        Err(e) => format!("Failed to wait for runner process: {}", e),
+                    };
+                    let message = match stderr_summary {
+                        Some(summary) => format!("{}; stderr: {}", wait_msg, summary),
+                        None => wait_msg,
+                    };
+
+                    let _ = app_handle.emit(
+                        "run-event",
+                        serde_json::json!({
+                            "type": "error",
+                            "message": message,
+                            "timestamp": chrono::Utc::now().to_rfc3339(),
+                            "runId": run_id_clone,
+                        }),
+                    );
+                }
 
                 // Load and save final run from run.json if it exists
                 let run_json_path = run_dir.join("run.json");

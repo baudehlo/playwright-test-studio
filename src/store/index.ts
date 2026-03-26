@@ -13,7 +13,7 @@ interface RunEvent {
   description?: string;
   url?: string;
   method?: string;
-  status?: number;
+  status?: number | 'success' | 'failure';
   runId?: string;
   error?: string;
 }
@@ -216,13 +216,29 @@ export const useStore = create<AppState>((set, get) => ({
                 currentRunHttpFailures: [...state.currentRunHttpFailures, {
                   url: data.url ?? '',
                   method: data.method ?? 'GET',
-                  status: data.status ?? 0,
+                  status: typeof data.status === 'number' ? data.status : 0,
                   timestamp: data.timestamp ?? new Date().toISOString(),
                 }],
               };
             case 'complete':
-            case 'error':
+              if (data.status === 'failure') {
+                return {
+                  currentRunLog: [...state.currentRunLog, {
+                    level: 'error',
+                    message: data.error ?? data.message ?? 'Test run failed',
+                    timestamp: data.timestamp ?? new Date().toISOString(),
+                  }],
+                };
+              }
               return {};
+            case 'error':
+              return {
+                currentRunLog: [...state.currentRunLog, {
+                  level: 'error',
+                  message: data.error ?? data.message ?? 'Runner error',
+                  timestamp: data.timestamp ?? new Date().toISOString(),
+                }],
+              };
             default:
               return {};
           }
