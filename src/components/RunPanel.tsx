@@ -44,6 +44,7 @@ export function RunPanel() {
     selectedRun,
     selectRun,
     isRunning,
+    currentRunId,
     currentRunLog,
     currentRunScreenshots,
     currentRunHttpFailures,
@@ -144,7 +145,7 @@ export function RunPanel() {
             ) : showLiveBuffer ? (
               <Screenshots
                 testId={selectedTestId}
-                runId="current"
+                runId={currentRunId ?? 'current'}
                 screenshots={displayScreenshots}
               />
             ) : (

@@ -27,6 +27,7 @@ interface AppState {
   runs: Record<string, Run[]>;
   selectedRun: Run | null;
   isRunning: boolean;
+  currentRunId: string | null;
   settings: Settings;
   currentRunLog: LogEntry[];
   currentRunScreenshots: Screenshot[];
@@ -67,6 +68,7 @@ export const useStore = create<AppState>((set, get) => ({
   runs: {},
   selectedRun: null,
   isRunning: false,
+  currentRunId: null,
   settings: defaultSettings,
   currentRunLog: [],
   currentRunScreenshots: [],
@@ -181,6 +183,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     set({
       isRunning: true,
+      currentRunId: null,
       currentRunLog: [],
       currentRunScreenshots: [],
       currentRunHttpFailures: [],
@@ -252,11 +255,13 @@ export const useStore = create<AppState>((set, get) => ({
       });
 
       const appDataDir = await invoke<string>('get_app_data_dir');
-      await invoke('run_test', { test: testWithMergedVars, settings, appDataDir });
+      const runId = await invoke<string>('run_test', { test: testWithMergedVars, settings, appDataDir });
+      set({ currentRunId: runId });
     } catch (e) {
       console.error('Failed to run test:', e);
       set({
         isRunning: false,
+        currentRunId: null,
         currentRunLog: [{
           level: 'error',
           message: String(e),

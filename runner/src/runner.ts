@@ -84,6 +84,13 @@ interface McpToolSchema {
   required?: string[];
 }
 
+interface NetworkRequest {
+  url?: string;
+  method?: string;
+  status?: number;
+  [key: string]: unknown;
+}
+
 async function readConfig(): Promise<RunnerConfig> {
   return new Promise((resolve, reject) => {
     let data = '';
@@ -167,10 +174,14 @@ async function main() {
     process.exit(1);
   }
 
+  // Track whether the MCP server exposes a network requests tool (set after listTools succeeds)
+  let hasNetworkRequestsTool = false;
+
   try {
     // Get tools from MCP
     const toolsResult = await mcpClient.listTools();
     addLog('info', `Available tools: ${toolsResult.tools.map(t => t.name).join(', ')}`);
+    hasNetworkRequestsTool = toolsResult.tools.some(t => t.name === 'browser_network_requests');
 
     // Build AI SDK tools from MCP tools
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -228,31 +239,6 @@ async function main() {
               name: capturedToolName,
               arguments: params,
             });
-
-            // Check for HTTP failures in tool results
-            const resultStr = JSON.stringify(result);
-            if (resultStr.includes('"status"') && (resultStr.includes('"4') || resultStr.includes('"5'))) {
-              // Attempt to extract HTTP failures from network-related tool results
-              try {
-                if (Array.isArray(result.content)) {
-                  for (const item of result.content) {
-                    if (typeof item === 'object' && item !== null && 'text' in item) {
-                      const text = String((item as { text: unknown }).text);
-                      const failureMatch = text.match(/(\w+)\s+(https?:\/\/[^\s]+).*?(\d{3})/);
-                      if (failureMatch) {
-                        const [, method, url, statusStr] = failureMatch;
-                        const status = parseInt(statusStr, 10);
-                        if (status >= 400) {
-                          const failure = { url, method, status, timestamp: new Date().toISOString() };
-                          httpFailures.push(failure);
-                          emit({ type: 'http_failure', ...failure });
-                        }
-                      }
-                    }
-                  }
-                }
-              } catch { /* ignore */ }
-            }
 
             // Auto-capture screenshot after navigation/click actions
             const navActions = ['browser_navigate', 'browser_click', 'browser_type', 'browser_select_option', 'browser_fill'];
@@ -331,12 +317,35 @@ If any step fails, explain why.`;
 
     addLog('info', 'Test completed successfully');
 
+    // Capture network failures via browser_network_requests if available
+    if (hasNetworkRequestsTool) {
+      try {
+        addLog('info', 'Capturing network requests...');
+        const networkResult = await mcpClient.callTool({
+          name: 'browser_network_requests',
+          arguments: {},
+        });
+        collectNetworkFailures(networkResult.content, httpFailures, emit);
+      } catch (netErr) {
+        addLog('warn', `Failed to capture network requests: ${netErr}`);
+      }
+    }
+
     const run = buildRun(runId, test.id, 'success', screenshots, httpFailures, logEntries, undefined);
     writeRun(runDir, run);
     emit({ type: 'complete', runId, status: 'success', timestamp: new Date().toISOString() });
 
   } catch (e) {
     addLog('error', `Test failed: ${e}`);
+
+    // Capture network failures even on test failure for diagnostic purposes
+    if (hasNetworkRequestsTool && mcpClient) {
+      try {
+        const networkResult = await mcpClient.callTool({ name: 'browser_network_requests', arguments: {} });
+        collectNetworkFailures(networkResult.content, httpFailures, emit);
+      } catch { /* ignore network capture errors in failure path */ }
+    }
+
     const run = buildRun(runId, test.id, 'failure', screenshots, httpFailures, logEntries, String(e));
     writeRun(runDir, run);
     emit({ type: 'complete', runId, status: 'failure', error: String(e), timestamp: new Date().toISOString() });
@@ -344,6 +353,38 @@ If any step fails, explain why.`;
     if (mcpClient) {
       try { await mcpClient.close(); } catch { /* ignore */ }
     }
+  }
+}
+
+/**
+ * Parse network request objects from a browser_network_requests MCP tool response,
+ * collect failures (HTTP 4xx/5xx), push them into the shared httpFailures array,
+ * and emit an http_failure event for each one.
+ */
+function collectNetworkFailures(
+  content: unknown,
+  httpFailures: Array<{ url: string; method: string; status: number; timestamp: string }>,
+  emitter: (event: RunEvent) => void,
+): void {
+  if (!Array.isArray(content)) return;
+  for (const item of content) {
+    if (typeof item !== 'object' || item === null || !('text' in item)) continue;
+    const text = String((item as { text: unknown }).text);
+    try {
+      const requests = JSON.parse(text) as NetworkRequest[];
+      for (const req of requests) {
+        if (typeof req.status === 'number' && req.status >= 400) {
+          const failure = {
+            url: req.url ?? '',
+            method: req.method ?? 'GET',
+            status: req.status,
+            timestamp: new Date().toISOString(),
+          };
+          httpFailures.push(failure);
+          emitter({ type: 'http_failure', ...failure });
+        }
+      }
+    } catch { /* not JSON, skip */ }
   }
 }
 
