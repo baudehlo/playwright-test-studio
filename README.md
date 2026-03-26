@@ -2,6 +2,10 @@
 
 A Tauri desktop application for QA engineers: write plain-English test scripts and run them via an AI agent that controls a real browser using [Playwright MCP](https://github.com/microsoft/playwright-mcp).
 
+<p align="center">
+  <img src="docs/screenshots/pts-carousel.gif" alt="Playwright Test Studio screenshots" width="720" />
+</p>
+
 ## Features
 
 - 📝 Write tests in plain English — no code required
