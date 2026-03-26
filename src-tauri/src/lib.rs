@@ -238,8 +238,29 @@ pub fn run_test(
     let screenshots_dir = run_dir.join("screenshots");
     fs::create_dir_all(&screenshots_dir).map_err(|e| e.to_string())?;
 
+    // Build ancestor chain so the runner can provide context from parent tests.
+    // Walk up the parentId chain (stopping on cycles) and collect in execution order.
+    let all_tests = get_tests(app.clone());
+    let mut parent_tests: Vec<Test> = Vec::new();
+    let mut visited: std::collections::HashSet<String> = std::collections::HashSet::new();
+    visited.insert(test.id.clone());
+    let mut current_parent_id = test.parent_id.clone();
+    while let Some(ref pid) = current_parent_id {
+        if visited.contains(pid) {
+            break; // guard against cycles
+        }
+        visited.insert(pid.clone());
+        if let Some(parent) = all_tests.iter().find(|t| &t.id == pid) {
+            parent_tests.insert(0, parent.clone());
+            current_parent_id = parent.parent_id.clone();
+        } else {
+            break;
+        }
+    }
+
     let config = serde_json::json!({
         "test": test,
+        "parentTests": parent_tests,
         "settings": settings,
         "runDir": run_dir.to_string_lossy(),
         "screenshotsDir": screenshots_dir.to_string_lossy(),

@@ -28,6 +28,7 @@ interface SettingsData {
 
 interface RunnerConfig {
   test: TestData;
+  parentTests?: TestData[];
   settings: SettingsData;
   runDir: string;
   screenshotsDir: string;
@@ -122,6 +123,24 @@ async function main() {
 
   const expandedScript = expandVariables(test.script, test.variables);
   addLog('info', `Expanded script variables`);
+
+  // If this test has parent tests, prepend their scripts as context so the AI
+  // knows what was previously completed and can continue from that state.
+  let fullScript = expandedScript;
+  if (config.parentTests && config.parentTests.length > 0) {
+    const parentContext = config.parentTests
+      .map(pt => {
+        const parentScript = expandVariables(pt.script, pt.variables);
+        return `[${pt.name}]\n${parentScript}`;
+      })
+      .join('\n\n');
+    const PARENT_HEADER =
+      'PREVIOUSLY COMPLETED STEPS (the browser should already be in this state' +
+      ' — do NOT re-execute these, just use them as context):';
+    const CURRENT_HEADER = 'CURRENT STEPS TO EXECUTE NOW:';
+    fullScript = `${PARENT_HEADER}\n${parentContext}\n\n${CURRENT_HEADER}\n${expandedScript}`;
+    addLog('info', `Loaded context from ${config.parentTests.length} parent test(s): ${config.parentTests.map(p => p.name).join(' → ')}`);
+  }
 
   // Connect to Playwright MCP server
   let mcpClient: Client | null = null;
@@ -294,7 +313,7 @@ If any step fails, explain why.`;
     await generateText({
       model: provider(settings.model),
       system: systemPrompt,
-      prompt: expandedScript,
+      prompt: fullScript,
       tools: aiTools,
       maxSteps: 50,
       onStepFinish: async (step) => {

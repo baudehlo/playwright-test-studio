@@ -6,7 +6,7 @@ A Tauri desktop application for QA engineers: write plain-English test scripts a
 
 - 📝 Write tests in plain English — no code required
 - 🤖 AI-powered execution via OpenAI, Anthropic, Groq, Azure OpenAI, or xAI
-- 🌳 Hierarchical test collections (parent/child tests)
+- 🌳 Hierarchical test collections — child tests continue from where the parent left off
 - 🔑 Variable expansion (`${varName}`) for reusable scripts
 - 📸 Automatic screenshot capture during test runs
 - 📊 Run history with pass/fail tracking over time

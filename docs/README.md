@@ -78,9 +78,11 @@ Variables let you:
 
 ## Test Hierarchy
 
-Tests can be organized in a parent/child hierarchy. This is useful for:
-- Grouping related tests together
-- Organizing tests by feature or user flow
+Tests can be organized in a parent/child hierarchy. Child tests **continue from where their parent left off**: when a child test runs, the AI agent receives the parent's completed steps as context so it can pick up in that browser state.
+
+This is useful for:
+- Chaining multi-step flows (e.g. "Login" → "Create entry" → "Verify entry")
+- Re-using a common setup test as the starting point for multiple child tests
 
 To create a child test:
 1. Hover over an existing test in the left panel
