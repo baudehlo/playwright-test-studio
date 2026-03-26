@@ -25,15 +25,16 @@ export function Screenshots({ testId, runId, screenshots }: ScreenshotsProps) {
     const shot = screenshots[currentIdx];
     if (!shot) return;
     const filename = shot.path.split('/').pop() ?? shot.path;
+    let objectUrl: string | null = null;
     invoke<number[]>('get_screenshot_data', { testId, runId, filename })
       .then(bytes => {
         const uint8 = new Uint8Array(bytes);
         const blob = new Blob([uint8], { type: 'image/png' });
-        const url = URL.createObjectURL(blob);
-        setImgSrc(url);
-        return () => URL.revokeObjectURL(url);
+        objectUrl = URL.createObjectURL(blob);
+        setImgSrc(objectUrl);
       })
       .catch(e => { console.error('Failed to load screenshot:', e); setImgSrc(null); });
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [testId, runId, currentIdx, screenshots]);
 
   if (screenshots.length === 0) {

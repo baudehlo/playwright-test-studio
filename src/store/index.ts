@@ -111,8 +111,6 @@ export const useStore = create<AppState>((set, get) => ({
     });
 
     try {
-      const appDataDir = await invoke<string>('get_app_data_dir');
-
       const unlisten = await listen<RunEvent>('run-event', (event) => {
         const data = event.payload;
         set(state => {
@@ -158,6 +156,7 @@ export const useStore = create<AppState>((set, get) => ({
         }
       });
 
+      const appDataDir = await invoke<string>('get_app_data_dir');
       await invoke('run_test', { test, settings, appDataDir });
     } catch (e) {
       console.error('Failed to run test:', e);
