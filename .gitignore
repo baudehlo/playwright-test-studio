@@ -137,3 +137,10 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Runner build output
+runner/dist/
+runner/node_modules/
+
+# App data
+*.json.bak
