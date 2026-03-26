@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import type { Test, Run, Settings, LogEntry, Screenshot, HttpFailure } from '../types';
+import type { Test, Run, Settings, LogEntry, Screenshot, HttpFailure, Collection } from '../types';
 
 interface RunEvent {
   type: 'log' | 'screenshot' | 'http_failure' | 'complete' | 'error';
@@ -20,7 +20,10 @@ interface RunEvent {
 
 interface AppState {
   tests: Test[];
+  collections: Collection[];
+  globalVariables: Record<string, string>;
   selectedTestId: string | null;
+  selectedCollectionId: string | null;
   runs: Record<string, Run[]>;
   selectedRun: Run | null;
   isRunning: boolean;
@@ -33,6 +36,15 @@ interface AppState {
   saveTest: (test: Test) => Promise<void>;
   deleteTest: (id: string) => Promise<void>;
   selectTest: (id: string | null) => void;
+
+  loadCollections: () => Promise<void>;
+  saveCollection: (collection: Collection) => Promise<void>;
+  deleteCollection: (id: string) => Promise<void>;
+  selectCollection: (id: string | null) => void;
+
+  loadGlobalVariables: () => Promise<void>;
+  saveGlobalVariables: (variables: Record<string, string>) => Promise<void>;
+
   loadRuns: (testId: string) => Promise<void>;
   selectRun: (run: Run | null) => void;
   runTest: (test: Test) => Promise<void>;
@@ -48,7 +60,10 @@ const defaultSettings: Settings = {
 
 export const useStore = create<AppState>((set, get) => ({
   tests: [],
+  collections: [],
+  globalVariables: {},
   selectedTestId: null,
+  selectedCollectionId: null,
   runs: {},
   selectedRun: null,
   isRunning: false,
@@ -88,6 +103,55 @@ export const useStore = create<AppState>((set, get) => ({
     if (id) get().loadRuns(id);
   },
 
+  loadCollections: async () => {
+    try {
+      const collections = await invoke<Collection[]>('get_collections');
+      set({ collections });
+    } catch (e) {
+      console.error('Failed to load collections:', e);
+    }
+  },
+
+  saveCollection: async (collection: Collection) => {
+    const { collections } = get();
+    const existing = collections.findIndex(c => c.id === collection.id);
+    const updated = existing >= 0
+      ? collections.map(c => c.id === collection.id ? collection : c)
+      : [...collections, collection];
+    await invoke('save_collections', { collections: updated });
+    set({ collections: updated });
+  },
+
+  deleteCollection: async (id: string) => {
+    const { collections, tests } = get();
+    const updatedCollections = collections.filter(c => c.id !== id);
+    // Unassign tests that belonged to this collection
+    const updatedTests = tests.map(t =>
+      t.collectionId === id ? { ...t, collectionId: undefined } : t
+    );
+    await invoke('save_collections', { collections: updatedCollections });
+    await invoke('save_tests', { tests: updatedTests });
+    set({ collections: updatedCollections, tests: updatedTests, selectedCollectionId: null });
+  },
+
+  selectCollection: (id: string | null) => {
+    set({ selectedCollectionId: id, selectedTestId: null, selectedRun: null });
+  },
+
+  loadGlobalVariables: async () => {
+    try {
+      const globalVariables = await invoke<Record<string, string>>('get_global_variables');
+      set({ globalVariables });
+    } catch (e) {
+      console.error('Failed to load global variables:', e);
+    }
+  },
+
+  saveGlobalVariables: async (variables: Record<string, string>) => {
+    await invoke('save_global_variables', { variables });
+    set({ globalVariables: variables });
+  },
+
   loadRuns: async (testId: string) => {
     try {
       const runs = await invoke<Run[]>('get_runs', { testId });
@@ -102,7 +166,19 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   runTest: async (test: Test) => {
-    const { settings } = get();
+    const { settings, collections, globalVariables } = get();
+
+    // Merge variables: global → collection → test (highest priority wins)
+    const collection = test.collectionId
+      ? collections.find(c => c.id === test.collectionId)
+      : undefined;
+    const mergedVariables: Record<string, string> = {
+      ...globalVariables,
+      ...(collection?.variables ?? {}),
+      ...test.variables,
+    };
+    const testWithMergedVars: Test = { ...test, variables: mergedVariables };
+
     set({
       isRunning: true,
       currentRunLog: [],
@@ -160,7 +236,7 @@ export const useStore = create<AppState>((set, get) => ({
       });
 
       const appDataDir = await invoke<string>('get_app_data_dir');
-      await invoke('run_test', { test, settings, appDataDir });
+      await invoke('run_test', { test: testWithMergedVars, settings, appDataDir });
     } catch (e) {
       console.error('Failed to run test:', e);
       set({

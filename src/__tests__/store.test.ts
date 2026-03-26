@@ -1,14 +1,25 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { Test, Settings } from '../types';
+import type { Test, Settings, Collection } from '../types';
 
 // Variable expansion utility
 function expandVariables(script: string, variables: Record<string, string>): string {
   return script.replace(/\$\{(\w+)\}/g, (_, key) => variables[key] ?? `\${${key}}`);
 }
 
+// Merge variables: global → collection → test (test wins)
+function mergeVariables(
+  globalVars: Record<string, string>,
+  collectionVars: Record<string, string>,
+  testVars: Record<string, string>,
+): Record<string, string> {
+  return { ...globalVars, ...collectionVars, ...testVars };
+}
+
 // Mock store operations
 function createMockStore() {
   let tests: Test[] = [];
+  let collections: Collection[] = [];
+  let globalVariables: Record<string, string> = {};
 
   return {
     getTests: () => tests,
@@ -19,6 +30,19 @@ function createMockStore() {
     deleteTest: (id: string) => {
       tests = tests.filter(t => t.id !== id && t.parentId !== id);
     },
+
+    getCollections: () => collections,
+    addCollection: (collection: Collection) => { collections = [...collections, collection]; },
+    updateCollection: (updated: Collection) => {
+      collections = collections.map(c => c.id === updated.id ? updated : c);
+    },
+    deleteCollection: (id: string) => {
+      collections = collections.filter(c => c.id !== id);
+      tests = tests.map(t => t.collectionId === id ? { ...t, collectionId: undefined } : t);
+    },
+
+    getGlobalVariables: () => globalVariables,
+    setGlobalVariables: (vars: Record<string, string>) => { globalVariables = vars; },
   };
 }
 
@@ -28,6 +52,17 @@ function makeTest(overrides?: Partial<Test>): Test {
     name: 'Test',
     description: '',
     script: '',
+    variables: {},
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+function makeCollection(overrides?: Partial<Collection>): Collection {
+  return {
+    id: crypto.randomUUID(),
+    name: 'Collection',
     variables: {},
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -59,6 +94,44 @@ describe('expandVariables', () => {
   it('handles no variables in script', () => {
     const result = expandVariables('Navigate to the home page', { url: 'https://example.com' });
     expect(result).toBe('Navigate to the home page');
+  });
+});
+
+describe('Variable hierarchy merging', () => {
+  it('test variables override collection variables', () => {
+    const merged = mergeVariables({}, { url: 'https://collection.com' }, { url: 'https://test.com' });
+    expect(merged.url).toBe('https://test.com');
+  });
+
+  it('collection variables override global variables', () => {
+    const merged = mergeVariables({ url: 'https://global.com' }, { url: 'https://collection.com' }, {});
+    expect(merged.url).toBe('https://collection.com');
+  });
+
+  it('test variables override global variables', () => {
+    const merged = mergeVariables({ url: 'https://global.com' }, {}, { url: 'https://test.com' });
+    expect(merged.url).toBe('https://test.com');
+  });
+
+  it('all three levels are available when non-overlapping', () => {
+    const merged = mergeVariables(
+      { globalVar: 'global' },
+      { collectionVar: 'collection' },
+      { testVar: 'test' },
+    );
+    expect(merged.globalVar).toBe('global');
+    expect(merged.collectionVar).toBe('collection');
+    expect(merged.testVar).toBe('test');
+  });
+
+  it('expands merged variables correctly', () => {
+    const merged = mergeVariables(
+      { baseUrl: 'https://example.com' },
+      { apiPath: '/api/v1' },
+      { endpoint: '/users' },
+    );
+    const result = expandVariables('${baseUrl}${apiPath}${endpoint}', merged);
+    expect(result).toBe('https://example.com/api/v1/users');
   });
 });
 
@@ -106,6 +179,81 @@ describe('Test CRUD operations', () => {
     store.addTest(t2);
     expect(store.getTests()).toHaveLength(2);
   });
+
+  it('associates test with a collection via collectionId', () => {
+    const collection = makeCollection({ name: 'My Collection' });
+    const test = makeTest({ collectionId: collection.id });
+    store.addCollection(collection);
+    store.addTest(test);
+    expect(store.getTests()[0].collectionId).toBe(collection.id);
+  });
+});
+
+describe('Collection CRUD operations', () => {
+  let store: ReturnType<typeof createMockStore>;
+
+  beforeEach(() => {
+    store = createMockStore();
+  });
+
+  it('adds a collection', () => {
+    const collection = makeCollection({ name: 'My Collection' });
+    store.addCollection(collection);
+    expect(store.getCollections()).toHaveLength(1);
+    expect(store.getCollections()[0].name).toBe('My Collection');
+  });
+
+  it('updates a collection', () => {
+    const collection = makeCollection({ name: 'Original' });
+    store.addCollection(collection);
+    store.updateCollection({ ...collection, name: 'Updated' });
+    expect(store.getCollections()[0].name).toBe('Updated');
+  });
+
+  it('deletes a collection', () => {
+    const collection = makeCollection();
+    store.addCollection(collection);
+    store.deleteCollection(collection.id);
+    expect(store.getCollections()).toHaveLength(0);
+  });
+
+  it('unassigns tests when their collection is deleted', () => {
+    const collection = makeCollection();
+    const test = makeTest({ collectionId: collection.id });
+    store.addCollection(collection);
+    store.addTest(test);
+    store.deleteCollection(collection.id);
+    expect(store.getTests()[0].collectionId).toBeUndefined();
+  });
+
+  it('stores collection variables', () => {
+    const collection = makeCollection({ variables: { baseUrl: 'https://example.com' } });
+    store.addCollection(collection);
+    expect(store.getCollections()[0].variables.baseUrl).toBe('https://example.com');
+  });
+
+  it('maintains multiple collections', () => {
+    store.addCollection(makeCollection({ name: 'A' }));
+    store.addCollection(makeCollection({ name: 'B' }));
+    expect(store.getCollections()).toHaveLength(2);
+  });
+});
+
+describe('Global variables', () => {
+  let store: ReturnType<typeof createMockStore>;
+
+  beforeEach(() => {
+    store = createMockStore();
+  });
+
+  it('stores and retrieves global variables', () => {
+    store.setGlobalVariables({ baseUrl: 'https://global.com' });
+    expect(store.getGlobalVariables().baseUrl).toBe('https://global.com');
+  });
+
+  it('starts with empty global variables', () => {
+    expect(store.getGlobalVariables()).toEqual({});
+  });
 });
 
 describe('Run status tracking', () => {
@@ -133,3 +281,4 @@ describe('Run status tracking', () => {
     expect(providers).toContain('anthropic');
   });
 });
+

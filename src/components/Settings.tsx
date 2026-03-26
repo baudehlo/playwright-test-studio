@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Eye, EyeOff } from 'lucide-react';
+import { Save, Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
 import { useStore } from '../store';
 import type { Settings as SettingsType } from '../types';
 
@@ -12,19 +12,52 @@ const PROVIDER_MODELS: Record<SettingsType['aiProvider'], string[]> = {
 };
 
 export function Settings() {
-  const { settings, saveSettings } = useStore();
+  const { settings, saveSettings, globalVariables, saveGlobalVariables } = useStore();
   const [form, setForm] = useState(settings);
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [globalVars, setGlobalVars] = useState<Array<{ key: string; value: string }>>([]);
+  const [globalVarsDirty, setGlobalVarsDirty] = useState(false);
+  const [globalVarsSaved, setGlobalVarsSaved] = useState(false);
 
   useEffect(() => {
     setForm(settings);
   }, [settings]);
 
+  useEffect(() => {
+    setGlobalVars(Object.entries(globalVariables).map(([key, value]) => ({ key, value })));
+  }, [globalVariables]);
+
   const handleSave = async () => {
     await saveSettings(form);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleSaveGlobalVars = async () => {
+    const varsRecord: Record<string, string> = {};
+    for (const { key, value } of globalVars) {
+      if (key.trim()) varsRecord[key.trim()] = value;
+    }
+    await saveGlobalVariables(varsRecord);
+    setGlobalVarsDirty(false);
+    setGlobalVarsSaved(true);
+    setTimeout(() => setGlobalVarsSaved(false), 2000);
+  };
+
+  const addGlobalVar = () => {
+    setGlobalVars(v => [...v, { key: '', value: '' }]);
+    setGlobalVarsDirty(true);
+  };
+
+  const removeGlobalVar = (idx: number) => {
+    setGlobalVars(v => v.filter((_, i) => i !== idx));
+    setGlobalVarsDirty(true);
+  };
+
+  const updateGlobalVar = (idx: number, field: 'key' | 'value', val: string) => {
+    setGlobalVars(v => v.map((item, i) => i === idx ? { ...item, [field]: val } : item));
+    setGlobalVarsDirty(true);
   };
 
   const field = (key: keyof SettingsType, value: string) => {
@@ -128,6 +161,71 @@ export function Settings() {
             {saved ? 'Saved!' : 'Save Settings'}
           </button>
         </div>
+      </div>
+
+      <div className="mt-6 bg-slate-800 rounded-lg p-6 border border-slate-700">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-sm font-medium text-slate-300">Global Variables</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Available in all tests across all collections. Use <code className="text-violet-400">{'${varName}'}</code> in scripts.
+              Overridden by collection variables and test variables.
+            </p>
+          </div>
+          <button
+            onClick={addGlobalVar}
+            className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            Add
+          </button>
+        </div>
+        {globalVars.length === 0 ? (
+          <p className="text-xs text-slate-600 italic">No global variables defined.</p>
+        ) : (
+          <div className="space-y-2 mb-4">
+            {globalVars.map((v, idx) => (
+              <div key={idx} className="flex gap-2">
+                <input
+                  value={v.key}
+                  onChange={e => updateGlobalVar(idx, 'key', e.target.value)}
+                  placeholder="Variable name"
+                  className="flex-1 bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500 font-mono"
+                />
+                <input
+                  value={v.value}
+                  onChange={e => updateGlobalVar(idx, 'value', e.target.value)}
+                  placeholder="Value"
+                  className="flex-1 bg-slate-900 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500"
+                />
+                <button
+                  onClick={() => removeGlobalVar(idx)}
+                  className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-700 rounded transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {(globalVarsDirty || globalVars.length > 0) && (
+          <div className="flex justify-end">
+            <button
+              onClick={handleSaveGlobalVars}
+              disabled={!globalVarsDirty}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                globalVarsSaved
+                  ? 'bg-green-600 text-white'
+                  : globalVarsDirty
+                    ? 'bg-violet-600 hover:bg-violet-500 text-white'
+                    : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              <Save className="w-3.5 h-3.5" />
+              {globalVarsSaved ? 'Saved!' : 'Save Global Variables'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mt-6 bg-slate-800 rounded-lg p-4 border border-slate-700">
