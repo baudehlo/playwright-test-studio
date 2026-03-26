@@ -144,8 +144,9 @@ pub fn save_run(app: AppHandle, test_id: String, run: Run) -> Result<(), String>
         Some(i) => runs[i] = run,
         None => runs.insert(0, run),
     }
-    // Keep only latest 50 runs in index
-    runs.truncate(50);
+    // Keep only the latest runs to bound disk usage
+    const MAX_RUNS_IN_INDEX: usize = 50;
+    runs.truncate(MAX_RUNS_IN_INDEX);
 
     let index_path = get_app_data_path(&app)
         .join("runs")
