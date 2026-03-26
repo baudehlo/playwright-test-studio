@@ -265,7 +265,7 @@ async function main() {
     }
 
     // Build AI SDK tools from MCP tools
-    const aiTools: Record<string, Tool<z.ZodTypeAny, unknown>> = {};
+    const aiTools: Record<string, Tool> = {};
     let screenshotCount = 0;
 
     for (const mcpTool of toolsResult.tools) {
