@@ -144,3 +144,12 @@ runner/node_modules/
 
 # App data
 *.json.bak
+
+# Tauri build output
+src-tauri/target/
+
+# Tauri gen schemas (auto-generated)
+src-tauri/gen/schemas/
+
+# Vite/frontend build output
+dist/

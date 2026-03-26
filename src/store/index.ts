@@ -124,6 +124,9 @@ export const useStore = create<AppState>((set, get) => ({
                 }],
               };
             case 'screenshot':
+              if (!data.id) {
+                console.warn('[run-event] screenshot event missing id field', data);
+              }
               return {
                 currentRunScreenshots: [...state.currentRunScreenshots, {
                   id: data.id ?? crypto.randomUUID(),

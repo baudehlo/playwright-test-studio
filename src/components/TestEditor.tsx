@@ -13,6 +13,8 @@ export function TestEditor() {
   const [variables, setVariables] = useState<Array<{ key: string; value: string }>>([]);
   const [isDirty, setIsDirty] = useState(false);
 
+  // Reset form when a different test is selected. Using selectedTest?.id intentionally:
+  // we only reset when the selection changes, not on every save/update of the current test.
   useEffect(() => {
     if (selectedTest) {
       setName(selectedTest.name);
@@ -21,6 +23,7 @@ export function TestEditor() {
       setVariables(Object.entries(selectedTest.variables).map(([key, value]) => ({ key, value })));
       setIsDirty(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTest?.id]);
 
   const markDirty = () => setIsDirty(true);

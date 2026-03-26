@@ -10,10 +10,12 @@ function App() {
   const [currentPage, setCurrentPage] = useState<'main' | 'settings'>('main');
   const { loadTests, loadSettings } = useStore();
 
+  // Load data once on mount. Zustand actions are stable references so this is intentional.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadTests();
     loadSettings();
-  }, []);
+  }, [loadTests, loadSettings]);
 
   return (
     <Layout currentPage={currentPage} onNavigate={setCurrentPage}>

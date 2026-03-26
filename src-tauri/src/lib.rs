@@ -144,7 +144,9 @@ pub fn save_run(app: AppHandle, test_id: String, run: Run) -> Result<(), String>
         Some(i) => runs[i] = run,
         None => runs.insert(0, run),
     }
-    // Keep only the latest runs to bound disk usage
+    // Keep only the most recent 50 runs per test in the quick-access index.
+    // Older run data remains on disk but won't appear in the run history panel.
+    // This bounds the index file size and memory usage in the UI.
     const MAX_RUNS_IN_INDEX: usize = 50;
     runs.truncate(MAX_RUNS_IN_INDEX);
 

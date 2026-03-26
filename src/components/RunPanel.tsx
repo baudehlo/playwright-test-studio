@@ -55,7 +55,8 @@ export function RunPanel() {
     if (testRuns.length > 0 && !selectedRun) {
       selectRun(testRuns[0]);
     }
-  }, [testRuns.length, selectedRun, selectRun]);
+    // Use testRuns[0]?.id to re-run if the latest run changes, not just the count
+  }, [testRuns[0]?.id, selectedRun, selectRun]);
 
   const displayLog = isRunning ? currentRunLog : selectedRun?.log ?? [];
   const displayScreenshots = isRunning ? currentRunScreenshots : selectedRun?.screenshots ?? [];
