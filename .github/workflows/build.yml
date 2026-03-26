@@ -40,9 +40,19 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - run: npm ci
       - run: cd runner && npm ci && npm run build
+      - name: Validate release token
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -z "$GITHUB_TOKEN" ]]; then
+            echo "GITHUB_TOKEN is empty in this workflow context"
+            exit 1
+          fi
       - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
           tagName: v${{ inputs.version }}
           releaseName: 'v${{ inputs.version }}'
           args: ${{ matrix.args }}
