@@ -1,14 +1,23 @@
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  XCircle,
+} from 'lucide-react';
 import { useEffect } from 'react';
-import { CheckCircle2, XCircle, Clock, AlertTriangle, Activity } from 'lucide-react';
 import { useStore } from '../store';
+import type { HttpFailure, LogEntry, Run } from '../types';
 import { Screenshots } from './Screenshots';
-import type { Run, LogEntry, HttpFailure } from '../types';
 
 function StatusIcon({ status }: { status: Run['status'] }) {
   switch (status) {
-    case 'running': return <Activity className="w-4 h-4 text-blue-400 animate-pulse" />;
-    case 'success': return <CheckCircle2 className="w-4 h-4 text-green-400" />;
-    case 'failure': return <XCircle className="w-4 h-4 text-red-400" />;
+    case 'running':
+      return <Activity className="w-4 h-4 text-blue-400 animate-pulse" />;
+    case 'success':
+      return <CheckCircle2 className="w-4 h-4 text-green-400" />;
+    case 'failure':
+      return <XCircle className="w-4 h-4 text-red-400" />;
   }
 }
 
@@ -20,7 +29,9 @@ function LogLine({ entry }: { entry: LogEntry }) {
   };
   return (
     <div className={`flex gap-2 text-xs font-mono ${colors[entry.level]}`}>
-      <span className="text-slate-600 shrink-0">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+      <span className="text-slate-600 shrink-0">
+        {new Date(entry.timestamp).toLocaleTimeString()}
+      </span>
       <span className="break-all">{entry.message}</span>
     </div>
   );
@@ -29,7 +40,9 @@ function LogLine({ entry }: { entry: LogEntry }) {
 function FailureLine({ failure }: { failure: HttpFailure }) {
   return (
     <div className="flex gap-2 text-xs font-mono text-red-400">
-      <span className="text-slate-600 shrink-0">{new Date(failure.timestamp).toLocaleTimeString()}</span>
+      <span className="text-slate-600 shrink-0">
+        {new Date(failure.timestamp).toLocaleTimeString()}
+      </span>
       <span className="font-semibold">{failure.method}</span>
       <span className="text-slate-400">{failure.status}</span>
       <span className="break-all">{failure.url}</span>
@@ -65,9 +78,13 @@ export function RunPanel() {
   }, [testRuns[0]?.id, selectedRun, selectRun]);
 
   const showLiveBuffer = isRunning || (!selectedRun && hasLiveRunBuffer);
-  const displayLog = showLiveBuffer ? currentRunLog : selectedRun?.log ?? [];
-  const displayScreenshots = showLiveBuffer ? currentRunScreenshots : selectedRun?.screenshots ?? [];
-  const displayHttpFailures = showLiveBuffer ? currentRunHttpFailures : selectedRun?.httpFailures ?? [];
+  const displayLog = showLiveBuffer ? currentRunLog : (selectedRun?.log ?? []);
+  const displayScreenshots = showLiveBuffer
+    ? currentRunScreenshots
+    : (selectedRun?.screenshots ?? []);
+  const displayHttpFailures = showLiveBuffer
+    ? currentRunHttpFailures
+    : (selectedRun?.httpFailures ?? []);
 
   if (!selectedTestId) {
     return (
@@ -86,7 +103,7 @@ export function RunPanel() {
             Running...
           </button>
         )}
-        {testRuns.slice(0, 10).map(run => (
+        {testRuns.slice(0, 10).map((run) => (
           <button
             key={run.id}
             onClick={() => selectRun(run)}
@@ -101,7 +118,9 @@ export function RunPanel() {
           </button>
         ))}
         {testRuns.length === 0 && !isRunning && (
-          <span className="text-xs text-slate-600">No runs yet. Click "Run" to start.</span>
+          <span className="text-xs text-slate-600">
+            No runs yet. Click "Run" to start.
+          </span>
         )}
       </div>
 
@@ -111,10 +130,14 @@ export function RunPanel() {
             <div className="px-3 py-2 border-b border-slate-700 bg-red-950/20">
               <div className="flex items-center gap-1 mb-1">
                 <AlertTriangle className="w-3 h-3 text-red-400" />
-                <span className="text-xs font-medium text-red-400">HTTP Failures ({displayHttpFailures.length})</span>
+                <span className="text-xs font-medium text-red-400">
+                  HTTP Failures ({displayHttpFailures.length})
+                </span>
               </div>
               <div className="space-y-0.5 max-h-20 overflow-y-auto">
-                {displayHttpFailures.map((f, i) => <FailureLine key={i} failure={f} />)}
+                {displayHttpFailures.map((f, i) => (
+                  <FailureLine key={i} failure={f} />
+                ))}
               </div>
             </div>
           )}
@@ -133,7 +156,9 @@ export function RunPanel() {
 
         <div className="w-64 shrink-0">
           <div className="px-3 py-1.5 border-b border-slate-700">
-            <span className="text-xs font-medium text-slate-400">Screenshots</span>
+            <span className="text-xs font-medium text-slate-400">
+              Screenshots
+            </span>
           </div>
           <div className="h-[calc(100%-28px)]">
             {selectedRun && !showLiveBuffer ? (

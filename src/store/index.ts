@@ -1,7 +1,15 @@
-import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import type { Test, Run, Settings, LogEntry, Screenshot, HttpFailure, Collection } from '../types';
+import { create } from 'zustand';
+import type {
+  Collection,
+  HttpFailure,
+  LogEntry,
+  Run,
+  Screenshot,
+  Settings,
+  Test,
+} from '../types';
 
 interface RunEvent {
   type: 'log' | 'screenshot' | 'http_failure' | 'complete' | 'error';
@@ -85,17 +93,18 @@ export const useStore = create<AppState>((set, get) => ({
 
   saveTest: async (test: Test) => {
     const { tests } = get();
-    const existing = tests.findIndex(t => t.id === test.id);
-    const updated = existing >= 0
-      ? tests.map(t => t.id === test.id ? test : t)
-      : [...tests, test];
+    const existing = tests.findIndex((t) => t.id === test.id);
+    const updated =
+      existing >= 0
+        ? tests.map((t) => (t.id === test.id ? test : t))
+        : [...tests, test];
     await invoke('save_tests', { tests: updated });
     set({ tests: updated });
   },
 
   deleteTest: async (id: string) => {
     const { tests } = get();
-    const updated = tests.filter(t => t.id !== id && t.parentId !== id);
+    const updated = tests.filter((t) => t.id !== id && t.parentId !== id);
     await invoke('save_tests', { tests: updated });
     set({ tests: updated, selectedTestId: null });
   },
@@ -116,24 +125,29 @@ export const useStore = create<AppState>((set, get) => ({
 
   saveCollection: async (collection: Collection) => {
     const { collections } = get();
-    const existing = collections.findIndex(c => c.id === collection.id);
-    const updated = existing >= 0
-      ? collections.map(c => c.id === collection.id ? collection : c)
-      : [...collections, collection];
+    const existing = collections.findIndex((c) => c.id === collection.id);
+    const updated =
+      existing >= 0
+        ? collections.map((c) => (c.id === collection.id ? collection : c))
+        : [...collections, collection];
     await invoke('save_collections', { collections: updated });
     set({ collections: updated });
   },
 
   deleteCollection: async (id: string) => {
     const { collections, tests } = get();
-    const updatedCollections = collections.filter(c => c.id !== id);
+    const updatedCollections = collections.filter((c) => c.id !== id);
     // Unassign tests that belonged to this collection
-    const updatedTests = tests.map(t =>
-      t.collectionId === id ? { ...t, collectionId: undefined } : t
+    const updatedTests = tests.map((t) =>
+      t.collectionId === id ? { ...t, collectionId: undefined } : t,
     );
     await invoke('save_collections', { collections: updatedCollections });
     await invoke('save_tests', { tests: updatedTests });
-    set({ collections: updatedCollections, tests: updatedTests, selectedCollectionId: null });
+    set({
+      collections: updatedCollections,
+      tests: updatedTests,
+      selectedCollectionId: null,
+    });
   },
 
   selectCollection: (id: string | null) => {
@@ -142,7 +156,9 @@ export const useStore = create<AppState>((set, get) => ({
 
   loadGlobalVariables: async () => {
     try {
-      const globalVariables = await invoke<Record<string, string>>('get_global_variables');
+      const globalVariables = await invoke<Record<string, string>>(
+        'get_global_variables',
+      );
       set({ globalVariables });
     } catch (e) {
       console.error('Failed to load global variables:', e);
@@ -157,7 +173,7 @@ export const useStore = create<AppState>((set, get) => ({
   loadRuns: async (testId: string) => {
     try {
       const runs = await invoke<Run[]>('get_runs', { testId });
-      set(state => ({ runs: { ...state.runs, [testId]: runs } }));
+      set((state) => ({ runs: { ...state.runs, [testId]: runs } }));
     } catch (e) {
       console.error('Failed to load runs:', e);
     }
@@ -172,7 +188,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     // Merge variables: global → collection → test (highest priority wins)
     const collection = test.collectionId
-      ? collections.find(c => c.id === test.collectionId)
+      ? collections.find((c) => c.id === test.collectionId)
       : undefined;
     const mergedVariables: Record<string, string> = {
       ...globalVariables,
@@ -192,55 +208,73 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const unlisten = await listen<RunEvent>('run-event', (event) => {
         const data = event.payload;
-        set(state => {
+        set((state) => {
           switch (data.type) {
             case 'log':
               return {
-                currentRunLog: [...state.currentRunLog, {
-                  level: data.level ?? 'info',
-                  message: data.message ?? '',
-                  timestamp: data.timestamp ?? new Date().toISOString(),
-                }],
+                currentRunLog: [
+                  ...state.currentRunLog,
+                  {
+                    level: data.level ?? 'info',
+                    message: data.message ?? '',
+                    timestamp: data.timestamp ?? new Date().toISOString(),
+                  },
+                ],
               };
             case 'screenshot':
               if (!data.id) {
-                console.warn('[run-event] screenshot event missing id field', data);
+                console.warn(
+                  '[run-event] screenshot event missing id field',
+                  data,
+                );
               }
               return {
-                currentRunScreenshots: [...state.currentRunScreenshots, {
-                  id: data.id ?? crypto.randomUUID(),
-                  path: data.path ?? '',
-                  description: data.description ?? '',
-                  timestamp: data.timestamp ?? new Date().toISOString(),
-                }],
+                currentRunScreenshots: [
+                  ...state.currentRunScreenshots,
+                  {
+                    id: data.id ?? crypto.randomUUID(),
+                    path: data.path ?? '',
+                    description: data.description ?? '',
+                    timestamp: data.timestamp ?? new Date().toISOString(),
+                  },
+                ],
               };
             case 'http_failure':
               return {
-                currentRunHttpFailures: [...state.currentRunHttpFailures, {
-                  url: data.url ?? '',
-                  method: data.method ?? 'GET',
-                  status: typeof data.status === 'number' ? data.status : 0,
-                  timestamp: data.timestamp ?? new Date().toISOString(),
-                }],
+                currentRunHttpFailures: [
+                  ...state.currentRunHttpFailures,
+                  {
+                    url: data.url ?? '',
+                    method: data.method ?? 'GET',
+                    status: typeof data.status === 'number' ? data.status : 0,
+                    timestamp: data.timestamp ?? new Date().toISOString(),
+                  },
+                ],
               };
             case 'complete':
               if (data.status === 'failure') {
                 return {
-                  currentRunLog: [...state.currentRunLog, {
-                    level: 'error',
-                    message: data.error ?? data.message ?? 'Test run failed',
-                    timestamp: data.timestamp ?? new Date().toISOString(),
-                  }],
+                  currentRunLog: [
+                    ...state.currentRunLog,
+                    {
+                      level: 'error',
+                      message: data.error ?? data.message ?? 'Test run failed',
+                      timestamp: data.timestamp ?? new Date().toISOString(),
+                    },
+                  ],
                 };
               }
               return {};
             case 'error':
               return {
-                currentRunLog: [...state.currentRunLog, {
-                  level: 'error',
-                  message: data.error ?? data.message ?? 'Runner error',
-                  timestamp: data.timestamp ?? new Date().toISOString(),
-                }],
+                currentRunLog: [
+                  ...state.currentRunLog,
+                  {
+                    level: 'error',
+                    message: data.error ?? data.message ?? 'Runner error',
+                    timestamp: data.timestamp ?? new Date().toISOString(),
+                  },
+                ],
               };
             default:
               return {};
@@ -255,18 +289,24 @@ export const useStore = create<AppState>((set, get) => ({
       });
 
       const appDataDir = await invoke<string>('get_app_data_dir');
-      const runId = await invoke<string>('run_test', { test: testWithMergedVars, settings, appDataDir });
+      const runId = await invoke<string>('run_test', {
+        test: testWithMergedVars,
+        settings,
+        appDataDir,
+      });
       set({ currentRunId: runId });
     } catch (e) {
       console.error('Failed to run test:', e);
       set({
         isRunning: false,
         currentRunId: null,
-        currentRunLog: [{
-          level: 'error',
-          message: String(e),
-          timestamp: new Date().toISOString(),
-        }],
+        currentRunLog: [
+          {
+            level: 'error',
+            message: String(e),
+            timestamp: new Date().toISOString(),
+          },
+        ],
       });
     }
   },

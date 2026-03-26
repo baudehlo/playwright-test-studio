@@ -1,20 +1,28 @@
-import { useState, useEffect } from 'react';
-import { Plus, Trash2, Save } from 'lucide-react';
+import { Plus, Save, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import type { Collection } from '../types';
 
 export function CollectionEditor() {
   const { collections, selectedCollectionId, saveCollection } = useStore();
-  const selectedCollection = collections.find(c => c.id === selectedCollectionId) ?? null;
+  const selectedCollection =
+    collections.find((c) => c.id === selectedCollectionId) ?? null;
 
   const [name, setName] = useState('');
-  const [variables, setVariables] = useState<Array<{ key: string; value: string }>>([]);
+  const [variables, setVariables] = useState<
+    Array<{ key: string; value: string }>
+  >([]);
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     if (selectedCollection) {
       setName(selectedCollection.name);
-      setVariables(Object.entries(selectedCollection.variables).map(([key, value]) => ({ key, value })));
+      setVariables(
+        Object.entries(selectedCollection.variables).map(([key, value]) => ({
+          key,
+          value,
+        })),
+      );
       setIsDirty(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -39,17 +47,19 @@ export function CollectionEditor() {
   };
 
   const addVariable = () => {
-    setVariables(v => [...v, { key: '', value: '' }]);
+    setVariables((v) => [...v, { key: '', value: '' }]);
     markDirty();
   };
 
   const removeVariable = (idx: number) => {
-    setVariables(v => v.filter((_, i) => i !== idx));
+    setVariables((v) => v.filter((_, i) => i !== idx));
     markDirty();
   };
 
   const updateVariable = (idx: number, field: 'key' | 'value', val: string) => {
-    setVariables(v => v.map((item, i) => i === idx ? { ...item, [field]: val } : item));
+    setVariables((v) =>
+      v.map((item, i) => (i === idx ? { ...item, [field]: val } : item)),
+    );
     markDirty();
   };
 
@@ -66,7 +76,10 @@ export function CollectionEditor() {
       <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700 shrink-0">
         <input
           value={name}
-          onChange={e => { setName(e.target.value); markDirty(); }}
+          onChange={(e) => {
+            setName(e.target.value);
+            markDirty();
+          }}
           className="text-sm font-semibold bg-transparent text-slate-100 outline-none border-b border-transparent focus:border-violet-500 transition-colors flex-1 mr-4"
           placeholder="Collection name"
         />
@@ -85,12 +98,16 @@ export function CollectionEditor() {
         <div>
           <p className="text-xs text-slate-500 mb-3">
             Collection variables are available to all tests in this collection.
-            They can be overridden by test-level variables and override global variables.
-            Use <code className="text-violet-400">{'${varName}'}</code> in your test scripts.
+            They can be overridden by test-level variables and override global
+            variables. Use{' '}
+            <code className="text-violet-400">{'${varName}'}</code> in your test
+            scripts.
           </p>
 
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-medium text-slate-400">Collection Variables</label>
+            <label className="text-xs font-medium text-slate-400">
+              Collection Variables
+            </label>
             <button
               onClick={addVariable}
               className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
@@ -100,20 +117,24 @@ export function CollectionEditor() {
             </button>
           </div>
           {variables.length === 0 ? (
-            <p className="text-xs text-slate-600 italic">No collection variables defined.</p>
+            <p className="text-xs text-slate-600 italic">
+              No collection variables defined.
+            </p>
           ) : (
             <div className="space-y-2">
               {variables.map((v, idx) => (
                 <div key={idx} className="flex gap-2">
                   <input
                     value={v.key}
-                    onChange={e => updateVariable(idx, 'key', e.target.value)}
+                    onChange={(e) => updateVariable(idx, 'key', e.target.value)}
                     placeholder="Variable name"
                     className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500 font-mono"
                   />
                   <input
                     value={v.value}
-                    onChange={e => updateVariable(idx, 'value', e.target.value)}
+                    onChange={(e) =>
+                      updateVariable(idx, 'value', e.target.value)
+                    }
                     placeholder="Value"
                     className="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-violet-500"
                   />

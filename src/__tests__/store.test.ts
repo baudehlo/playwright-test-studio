@@ -1,9 +1,15 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import type { Test, Settings, Collection } from '../types';
+import { beforeEach, describe, expect, it } from 'vitest';
+import type { Collection, Settings, Test } from '../types';
 
 // Variable expansion utility
-function expandVariables(script: string, variables: Record<string, string>): string {
-  return script.replace(/\$\{(\w+)\}/g, (_, key) => variables[key] ?? `\${${key}}`);
+function expandVariables(
+  script: string,
+  variables: Record<string, string>,
+): string {
+  return script.replace(
+    /\$\{(\w+)\}/g,
+    (_, key) => variables[key] ?? `\${${key}}`,
+  );
 }
 
 // Merge variables: global → collection → test (test wins)
@@ -23,26 +29,34 @@ function createMockStore() {
 
   return {
     getTests: () => tests,
-    addTest: (test: Test) => { tests = [...tests, test]; },
+    addTest: (test: Test) => {
+      tests = [...tests, test];
+    },
     updateTest: (updated: Test) => {
-      tests = tests.map(t => t.id === updated.id ? updated : t);
+      tests = tests.map((t) => (t.id === updated.id ? updated : t));
     },
     deleteTest: (id: string) => {
-      tests = tests.filter(t => t.id !== id && t.parentId !== id);
+      tests = tests.filter((t) => t.id !== id && t.parentId !== id);
     },
 
     getCollections: () => collections,
-    addCollection: (collection: Collection) => { collections = [...collections, collection]; },
+    addCollection: (collection: Collection) => {
+      collections = [...collections, collection];
+    },
     updateCollection: (updated: Collection) => {
-      collections = collections.map(c => c.id === updated.id ? updated : c);
+      collections = collections.map((c) => (c.id === updated.id ? updated : c));
     },
     deleteCollection: (id: string) => {
-      collections = collections.filter(c => c.id !== id);
-      tests = tests.map(t => t.collectionId === id ? { ...t, collectionId: undefined } : t);
+      collections = collections.filter((c) => c.id !== id);
+      tests = tests.map((t) =>
+        t.collectionId === id ? { ...t, collectionId: undefined } : t,
+      );
     },
 
     getGlobalVariables: () => globalVariables,
-    setGlobalVariables: (vars: Record<string, string>) => { globalVariables = vars; },
+    setGlobalVariables: (vars: Record<string, string>) => {
+      globalVariables = vars;
+    },
   };
 }
 
@@ -72,7 +86,9 @@ function makeCollection(overrides?: Partial<Collection>): Collection {
 
 describe('expandVariables', () => {
   it('replaces known variables', () => {
-    const result = expandVariables('Navigate to ${url}', { url: 'https://example.com' });
+    const result = expandVariables('Navigate to ${url}', {
+      url: 'https://example.com',
+    });
     expect(result).toBe('Navigate to https://example.com');
   });
 
@@ -82,7 +98,10 @@ describe('expandVariables', () => {
   });
 
   it('replaces multiple variables', () => {
-    const result = expandVariables('${greeting} ${name}!', { greeting: 'Hello', name: 'World' });
+    const result = expandVariables('${greeting} ${name}!', {
+      greeting: 'Hello',
+      name: 'World',
+    });
     expect(result).toBe('Hello World!');
   });
 
@@ -92,24 +111,38 @@ describe('expandVariables', () => {
   });
 
   it('handles no variables in script', () => {
-    const result = expandVariables('Navigate to the home page', { url: 'https://example.com' });
+    const result = expandVariables('Navigate to the home page', {
+      url: 'https://example.com',
+    });
     expect(result).toBe('Navigate to the home page');
   });
 });
 
 describe('Variable hierarchy merging', () => {
   it('test variables override collection variables', () => {
-    const merged = mergeVariables({}, { url: 'https://collection.com' }, { url: 'https://test.com' });
+    const merged = mergeVariables(
+      {},
+      { url: 'https://collection.com' },
+      { url: 'https://test.com' },
+    );
     expect(merged.url).toBe('https://test.com');
   });
 
   it('collection variables override global variables', () => {
-    const merged = mergeVariables({ url: 'https://global.com' }, { url: 'https://collection.com' }, {});
+    const merged = mergeVariables(
+      { url: 'https://global.com' },
+      { url: 'https://collection.com' },
+      {},
+    );
     expect(merged.url).toBe('https://collection.com');
   });
 
   it('test variables override global variables', () => {
-    const merged = mergeVariables({ url: 'https://global.com' }, {}, { url: 'https://test.com' });
+    const merged = mergeVariables(
+      { url: 'https://global.com' },
+      {},
+      { url: 'https://test.com' },
+    );
     expect(merged.url).toBe('https://test.com');
   });
 
@@ -227,9 +260,13 @@ describe('Collection CRUD operations', () => {
   });
 
   it('stores collection variables', () => {
-    const collection = makeCollection({ variables: { baseUrl: 'https://example.com' } });
+    const collection = makeCollection({
+      variables: { baseUrl: 'https://example.com' },
+    });
     store.addCollection(collection);
-    expect(store.getCollections()[0].variables.baseUrl).toBe('https://example.com');
+    expect(store.getCollections()[0].variables.baseUrl).toBe(
+      'https://example.com',
+    );
   });
 
   it('maintains multiple collections', () => {
@@ -258,7 +295,11 @@ describe('Global variables', () => {
 
 describe('Run status tracking', () => {
   it('tracks running status', () => {
-    const statuses: Array<'running' | 'success' | 'failure'> = ['running', 'success', 'failure'];
+    const statuses: Array<'running' | 'success' | 'failure'> = [
+      'running',
+      'success',
+      'failure',
+    ];
     for (const s of statuses) {
       expect(s).toMatch(/^(running|success|failure)$/);
     }
@@ -275,10 +316,15 @@ describe('Run status tracking', () => {
   });
 
   it('handles all AI providers', () => {
-    const providers: Settings['aiProvider'][] = ['openai', 'anthropic', 'azure-openai', 'groq', 'xai'];
+    const providers: Settings['aiProvider'][] = [
+      'openai',
+      'anthropic',
+      'azure-openai',
+      'groq',
+      'xai',
+    ];
     expect(providers).toHaveLength(5);
     expect(providers).toContain('openai');
     expect(providers).toContain('anthropic');
   });
 });
-
