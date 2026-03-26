@@ -1,9 +1,18 @@
+export interface Collection {
+  id: string;
+  name: string;
+  variables: Record<string, string>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Test {
   id: string;
   name: string;
   description: string;
   script: string;
   parentId?: string;
+  collectionId?: string;
   variables: Record<string, string>;
   createdAt: string;
   updatedAt: string;

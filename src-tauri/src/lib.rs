@@ -4,6 +4,17 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Emitter, Manager};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Collection {
+    pub id: String,
+    pub name: String,
+    pub variables: std::collections::HashMap<String, String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Test {
     pub id: String,
     pub name: String,
@@ -11,6 +22,8 @@ pub struct Test {
     pub script: String,
     #[serde(rename = "parentId", skip_serializing_if = "Option::is_none")]
     pub parent_id: Option<String>,
+    #[serde(rename = "collectionId", skip_serializing_if = "Option::is_none")]
+    pub collection_id: Option<String>,
     pub variables: std::collections::HashMap<String, String>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
@@ -204,6 +217,47 @@ fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn get_collections(app: AppHandle) -> Vec<Collection> {
+    let path = get_app_data_path(&app).join("collections.json");
+    if !path.exists() {
+        return vec![];
+    }
+    let data = fs::read_to_string(&path).unwrap_or_default();
+    serde_json::from_str(&data).unwrap_or_default()
+}
+
+#[tauri::command]
+fn save_collections(app: AppHandle, collections: Vec<Collection>) -> Result<(), String> {
+    let dir = get_app_data_path(&app);
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let path = dir.join("collections.json");
+    let data = serde_json::to_string_pretty(&collections).map_err(|e| e.to_string())?;
+    fs::write(path, data).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_global_variables(app: AppHandle) -> std::collections::HashMap<String, String> {
+    let path = get_app_data_path(&app).join("global-variables.json");
+    if !path.exists() {
+        return std::collections::HashMap::new();
+    }
+    let data = fs::read_to_string(&path).unwrap_or_default();
+    serde_json::from_str(&data).unwrap_or_default()
+}
+
+#[tauri::command]
+fn save_global_variables(
+    app: AppHandle,
+    variables: std::collections::HashMap<String, String>,
+) -> Result<(), String> {
+    let dir = get_app_data_path(&app);
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let path = dir.join("global-variables.json");
+    let data = serde_json::to_string_pretty(&variables).map_err(|e| e.to_string())?;
+    fs::write(path, data).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn copy_runner_to_app_dir(app: AppHandle, app_data_dir: String) -> Result<(), String> {
     let dest_dir = PathBuf::from(&app_data_dir);
     fs::create_dir_all(&dest_dir).map_err(|e| e.to_string())?;
@@ -352,6 +406,10 @@ pub fn run() {
             get_screenshot_data,
             get_settings,
             save_settings,
+            get_collections,
+            save_collections,
+            get_global_variables,
+            save_global_variables,
             copy_runner_to_app_dir,
             run_test,
         ])
