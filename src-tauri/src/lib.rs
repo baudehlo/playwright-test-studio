@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Test {
@@ -75,12 +75,12 @@ fn get_app_data_path(app: &AppHandle) -> PathBuf {
 }
 
 #[tauri::command]
-pub fn get_app_data_dir(app: AppHandle) -> String {
+fn get_app_data_dir(app: AppHandle) -> String {
     get_app_data_path(&app).to_string_lossy().to_string()
 }
 
 #[tauri::command]
-pub fn get_tests(app: AppHandle) -> Vec<Test> {
+fn get_tests(app: AppHandle) -> Vec<Test> {
     let path = get_app_data_path(&app).join("tests.json");
     if !path.exists() {
         return vec![];
@@ -90,7 +90,7 @@ pub fn get_tests(app: AppHandle) -> Vec<Test> {
 }
 
 #[tauri::command]
-pub fn save_tests(app: AppHandle, tests: Vec<Test>) -> Result<(), String> {
+fn save_tests(app: AppHandle, tests: Vec<Test>) -> Result<(), String> {
     let dir = get_app_data_path(&app);
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let path = dir.join("tests.json");
@@ -99,7 +99,7 @@ pub fn save_tests(app: AppHandle, tests: Vec<Test>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn get_runs(app: AppHandle, test_id: String) -> Vec<Run> {
+fn get_runs(app: AppHandle, test_id: String) -> Vec<Run> {
     let path = get_app_data_path(&app)
         .join("runs")
         .join(&test_id)
@@ -112,7 +112,7 @@ pub fn get_runs(app: AppHandle, test_id: String) -> Vec<Run> {
 }
 
 #[tauri::command]
-pub fn get_run(app: AppHandle, test_id: String, run_id: String) -> Option<Run> {
+fn get_run(app: AppHandle, test_id: String, run_id: String) -> Option<Run> {
     let path = get_app_data_path(&app)
         .join("runs")
         .join(&test_id)
@@ -126,7 +126,7 @@ pub fn get_run(app: AppHandle, test_id: String, run_id: String) -> Option<Run> {
 }
 
 #[tauri::command]
-pub fn save_run(app: AppHandle, test_id: String, run: Run) -> Result<(), String> {
+fn save_run(app: AppHandle, test_id: String, run: Run) -> Result<(), String> {
     let run_dir = get_app_data_path(&app)
         .join("runs")
         .join(&test_id)
@@ -159,7 +159,7 @@ pub fn save_run(app: AppHandle, test_id: String, run: Run) -> Result<(), String>
 }
 
 #[tauri::command]
-pub fn get_screenshot_data(
+fn get_screenshot_data(
     app: AppHandle,
     test_id: String,
     run_id: String,
@@ -175,7 +175,7 @@ pub fn get_screenshot_data(
 }
 
 #[tauri::command]
-pub fn get_settings(app: AppHandle) -> Settings {
+fn get_settings(app: AppHandle) -> Settings {
     let path = get_app_data_path(&app).join("settings.json");
     if !path.exists() {
         return Settings {
@@ -195,7 +195,7 @@ pub fn get_settings(app: AppHandle) -> Settings {
 }
 
 #[tauri::command]
-pub fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
+fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
     let dir = get_app_data_path(&app);
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let path = dir.join("settings.json");
@@ -204,7 +204,7 @@ pub fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn copy_runner_to_app_dir(app: AppHandle, app_data_dir: String) -> Result<(), String> {
+fn copy_runner_to_app_dir(app: AppHandle, app_data_dir: String) -> Result<(), String> {
     let dest_dir = PathBuf::from(&app_data_dir);
     fs::create_dir_all(&dest_dir).map_err(|e| e.to_string())?;
     let dest = dest_dir.join("runner.js");
@@ -224,7 +224,7 @@ pub fn copy_runner_to_app_dir(app: AppHandle, app_data_dir: String) -> Result<()
 }
 
 #[tauri::command]
-pub fn run_test(
+fn run_test(
     app: AppHandle,
     test: Test,
     settings: Settings,

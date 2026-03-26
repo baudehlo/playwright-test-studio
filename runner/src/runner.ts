@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as readline from 'readline';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { generateText, tool } from 'ai';
+import { generateText, tool, type Tool } from 'ai';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { z } from 'zod';
@@ -173,7 +173,8 @@ async function main() {
     addLog('info', `Available tools: ${toolsResult.tools.map(t => t.name).join(', ')}`);
 
     // Build AI SDK tools from MCP tools
-    const aiTools: Record<string, ReturnType<typeof tool>> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const aiTools: Record<string, Tool<any, any>> = {};
     let screenshotCount = 0;
 
     for (const mcpTool of toolsResult.tools) {

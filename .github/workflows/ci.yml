@@ -20,4 +20,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: cd runner && npm ci && npm test
+      - run: cd runner && npm ci && npx tsc --noEmit && npm test
