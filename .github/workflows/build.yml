@@ -13,8 +13,10 @@ jobs:
         include:
           - platform: macos-latest
             args: --target aarch64-apple-darwin
-          - platform: macos-latest
+            rust-target: aarch64-apple-darwin
+          - platform: macos-13
             args: --target x86_64-apple-darwin
+            rust-target: x86_64-apple-darwin
           - platform: ubuntu-22.04
             args: ''
           - platform: windows-latest
@@ -26,6 +28,8 @@ jobs:
         with:
           node-version: '20'
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-target }}
       - name: Install Linux deps
         if: matrix.platform == 'ubuntu-22.04'
         run: |
