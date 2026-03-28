@@ -5,10 +5,28 @@ import {
   Clock,
   XCircle,
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import type { HttpFailure, LogEntry, Run } from '../types';
 import { Screenshots } from './Screenshots';
+
+const SCREENSHOTS_WIDTH_KEY = 'pts.layout.runPanel.screenshotsWidth';
+
+function readPersistedNumber(key: string, fallback: number): number {
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+  const raw = window.localStorage.getItem(key);
+  if (!raw) {
+    return fallback;
+  }
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
 
 function StatusIcon({ status }: { status: Run['status'] }) {
   switch (status) {
@@ -50,6 +68,38 @@ function FailureLine({ failure }: { failure: HttpFailure }) {
   );
 }
 
+function formatRunLabel(run: Run): string {
+  const started = new Date(run.startedAt);
+  const time = started.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const date = started.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+  });
+  return `${date} ${time}`;
+}
+
+function formatRunDuration(run: Run): string | null {
+  if (!run.completedAt) {
+    return null;
+  }
+  const start = new Date(run.startedAt).getTime();
+  const end = new Date(run.completedAt).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) {
+    return null;
+  }
+
+  const secs = Math.round((end - start) / 1000);
+  if (secs < 60) {
+    return `${secs}s`;
+  }
+  const mins = Math.floor(secs / 60);
+  const remSecs = secs % 60;
+  return `${mins}m ${remSecs}s`;
+}
+
 export function RunPanel() {
   const {
     selectedTestId,
@@ -62,6 +112,10 @@ export function RunPanel() {
     currentRunScreenshots,
     currentRunHttpFailures,
   } = useStore();
+  const [screenshotsWidth, setScreenshotsWidth] = useState(() =>
+    readPersistedNumber(SCREENSHOTS_WIDTH_KEY, 256),
+  );
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   const testRuns = selectedTestId ? (runs[selectedTestId] ?? []) : [];
 
@@ -76,6 +130,34 @@ export function RunPanel() {
     }
     // Use testRuns[0]?.id to re-run if the latest run changes, not just the count
   }, [testRuns[0]?.id, selectedRun, selectRun]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      SCREENSHOTS_WIDTH_KEY,
+      String(screenshotsWidth),
+    );
+  }, [screenshotsWidth]);
+
+  const startScreenshotsResize = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = screenshotsWidth;
+    const containerWidth = contentRef.current?.clientWidth ?? window.innerWidth;
+    const maxScreenshotsWidth = Math.max(260, containerWidth - 320);
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const delta = moveEvent.clientX - startX;
+      setScreenshotsWidth(clamp(startWidth - delta, 180, maxScreenshotsWidth));
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
 
   const showLiveBuffer = isRunning || (!selectedRun && hasLiveRunBuffer);
   const displayLog = showLiveBuffer ? currentRunLog : (selectedRun?.log ?? []);
@@ -110,11 +192,29 @@ export function RunPanel() {
             className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs shrink-0 transition-colors ${
               selectedRun?.id === run.id
                 ? 'bg-slate-600 text-slate-100'
-                : 'text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                : run.status === 'failure'
+                  ? 'text-red-300 bg-red-950/20 border border-red-900/40 hover:bg-red-900/30 hover:text-red-200'
+                  : 'text-slate-400 hover:bg-slate-700 hover:text-slate-200'
             }`}
+            title={run.error ?? undefined}
           >
             <StatusIcon status={run.status} />
-            {new Date(run.startedAt).toLocaleTimeString()}
+            <span>{formatRunLabel(run)}</span>
+            {run.status === 'failure' && (
+              <span className="text-[10px] uppercase tracking-wide font-semibold text-red-300">
+                Failed
+              </span>
+            )}
+            {run.status === 'success' && (
+              <span className="text-[10px] uppercase tracking-wide font-semibold text-green-300">
+                Passed
+              </span>
+            )}
+            {formatRunDuration(run) && (
+              <span className="text-[10px] text-slate-500">
+                {formatRunDuration(run)}
+              </span>
+            )}
           </button>
         ))}
         {testRuns.length === 0 && !isRunning && (
@@ -124,8 +224,8 @@ export function RunPanel() {
         )}
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-col flex-1 overflow-hidden border-r border-slate-700">
+      <div ref={contentRef} className="flex flex-1 overflow-hidden min-w-0">
+        <div className="flex flex-col flex-1 overflow-hidden min-w-[220px]">
           {displayHttpFailures.length > 0 && (
             <div className="px-3 py-2 border-b border-slate-700 bg-red-950/20">
               <div className="flex items-center gap-1 mb-1">
@@ -154,7 +254,16 @@ export function RunPanel() {
           </div>
         </div>
 
-        <div className="w-64 shrink-0">
+        <div
+          className="w-1 shrink-0 bg-slate-800 hover:bg-violet-500/60 active:bg-violet-500 cursor-col-resize"
+          onMouseDown={startScreenshotsResize}
+          title="Resize screenshots panel"
+        />
+
+        <div
+          className="shrink-0 border-l border-slate-700"
+          style={{ width: `${screenshotsWidth}px` }}
+        >
           <div className="px-3 py-1.5 border-b border-slate-700">
             <span className="text-xs font-medium text-slate-400">
               Screenshots

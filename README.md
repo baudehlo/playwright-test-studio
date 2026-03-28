@@ -69,6 +69,9 @@ npm run lint
 # Watch mode tests
 npm run test:watch
 
+# Check Rust code compiles
+npm run cargo-check
+
 # Build the runner
 npm run bundle-runner
 ```

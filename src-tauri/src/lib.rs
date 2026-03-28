@@ -83,8 +83,50 @@ pub struct Settings {
     pub base_url: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WindowState {
+    pub width: u32,
+    pub height: u32,
+    pub x: i32,
+    pub y: i32,
+}
+
 fn get_app_data_path(app: &AppHandle) -> PathBuf {
     app.path().app_data_dir().expect("Failed to get app data dir")
+}
+
+fn load_window_state_from_disk(app: &AppHandle) -> Option<WindowState> {
+    let path = get_app_data_path(app).join("window-state.json");
+    if !path.exists() {
+        return None;
+    }
+    let data = fs::read_to_string(&path).ok()?;
+    serde_json::from_str(&data).ok()
+}
+
+fn save_window_state_to_disk(app: &AppHandle, state: &WindowState) -> Result<(), String> {
+    let dir = get_app_data_path(app);
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let path = dir.join("window-state.json");
+    let data = serde_json::to_string_pretty(state).map_err(|e| e.to_string())?;
+    fs::write(path, data).map_err(|e| e.to_string())
+}
+
+fn is_window_state_visible_on_monitor(state: &WindowState, monitor: &tauri::Monitor) -> bool {
+    let window_left = i64::from(state.x);
+    let window_top = i64::from(state.y);
+    let window_right = window_left + i64::from(state.width);
+    let window_bottom = window_top + i64::from(state.height);
+
+    let monitor_left = i64::from(monitor.position().x);
+    let monitor_top = i64::from(monitor.position().y);
+    let monitor_right = monitor_left + i64::from(monitor.size().width);
+    let monitor_bottom = monitor_top + i64::from(monitor.size().height);
+
+    let overlap_width = std::cmp::min(window_right, monitor_right) - std::cmp::max(window_left, monitor_left);
+    let overlap_height = std::cmp::min(window_bottom, monitor_bottom) - std::cmp::max(window_top, monitor_top);
+
+    overlap_width >= 80 && overlap_height >= 80
 }
 
 #[tauri::command]
@@ -214,6 +256,25 @@ fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
     let path = dir.join("settings.json");
     let data = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
     fs::write(path, data).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_window_state(app: AppHandle) -> Option<WindowState> {
+    load_window_state_from_disk(&app)
+}
+
+#[tauri::command]
+fn save_window_state(app: AppHandle, state: WindowState) -> Result<(), String> {
+    save_window_state_to_disk(&app, &state)
+}
+
+#[tauri::command]
+fn clear_window_state(app: AppHandle) -> Result<(), String> {
+    let path = get_app_data_path(&app).join("window-state.json");
+    if path.exists() {
+        fs::remove_file(path).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -532,6 +593,25 @@ fn run_test(
                             "runId": run_id_clone,
                         }),
                     );
+
+                    // Persist a fallback failed run so terminal failures still
+                    // appear in run history and logs are accessible.
+                    let fallback_run = Run {
+                        id: run_id_clone.clone(),
+                        test_id: test_id.clone(),
+                        status: "failure".to_string(),
+                        started_at: chrono::Utc::now().to_rfc3339(),
+                        completed_at: Some(chrono::Utc::now().to_rfc3339()),
+                        screenshots: Vec::new(),
+                        http_failures: Vec::new(),
+                        log: vec![LogEntry {
+                            level: "error".to_string(),
+                            message: message.clone(),
+                            timestamp: chrono::Utc::now().to_rfc3339(),
+                        }],
+                        error: Some(message),
+                    };
+                    let _ = save_run(app_handle.clone(), test_id.clone(), fallback_run);
                 }
 
                 // Load and save final run from run.json if it exists
@@ -555,6 +635,81 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
+        .setup(|app| {
+            if let Some(window) = app.get_webview_window("main") {
+                let app_handle = app.handle().clone();
+
+                if let Some(state) = load_window_state_from_disk(&app_handle) {
+                    let _ = window.set_size(tauri::Size::Physical(tauri::PhysicalSize::new(
+                        state.width,
+                        state.height,
+                    )));
+
+                    let apply_saved_position = window
+                        .available_monitors()
+                        .map(|monitors| {
+                            monitors.is_empty()
+                                || monitors
+                                    .iter()
+                                    .any(|m| is_window_state_visible_on_monitor(&state, m))
+                        })
+                        .unwrap_or(true);
+
+                    if apply_saved_position {
+                        let _ = window.set_position(tauri::Position::Physical(
+                            tauri::PhysicalPosition::new(state.x, state.y),
+                        ));
+                    } else {
+                        let _ = window.center();
+                    }
+                } else if let (Ok(size), Ok(position)) = (window.inner_size(), window.outer_position()) {
+                    let _ = save_window_state_to_disk(
+                        &app_handle,
+                        &WindowState {
+                            width: size.width,
+                            height: size.height,
+                            x: position.x,
+                            y: position.y,
+                        },
+                    );
+                }
+
+                let window_for_events = window.clone();
+                window.on_window_event(move |event| {
+                    match event {
+                        tauri::WindowEvent::Resized(size) => {
+                            if let Ok(position) = window_for_events.outer_position() {
+                                let _ = save_window_state_to_disk(
+                                    &app_handle,
+                                    &WindowState {
+                                        width: size.width,
+                                        height: size.height,
+                                        x: position.x,
+                                        y: position.y,
+                                    },
+                                );
+                            }
+                        }
+                        tauri::WindowEvent::Moved(position) => {
+                            if let Ok(size) = window_for_events.inner_size() {
+                                let _ = save_window_state_to_disk(
+                                    &app_handle,
+                                    &WindowState {
+                                        width: size.width,
+                                        height: size.height,
+                                        x: position.x,
+                                        y: position.y,
+                                    },
+                                );
+                            }
+                        }
+                        _ => {}
+                    }
+                });
+            }
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_app_data_dir,
             get_tests,
@@ -565,6 +720,9 @@ pub fn run() {
             get_screenshot_data,
             get_settings,
             save_settings,
+            get_window_state,
+            save_window_state,
+            clear_window_state,
             get_collections,
             save_collections,
             get_global_variables,
