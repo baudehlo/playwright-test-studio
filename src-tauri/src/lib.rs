@@ -246,6 +246,7 @@ fn get_settings(app: AppHandle) -> Settings {
             api_key: String::new(),
             model: "gpt-4o".to_string(),
             base_url: None,
+            browsers: None,
         };
     }
     let data = fs::read_to_string(&path).unwrap_or_default();
@@ -254,6 +255,7 @@ fn get_settings(app: AppHandle) -> Settings {
         api_key: String::new(),
         model: "gpt-4o".to_string(),
         base_url: None,
+        browsers: None,
     })
 }
 
