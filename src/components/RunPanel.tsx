@@ -200,6 +200,11 @@ export function RunPanel() {
           >
             <StatusIcon status={run.status} />
             <span>{formatRunLabel(run)}</span>
+            {run.browser && (
+              <span className="text-[10px] font-mono bg-slate-700 text-slate-300 px-1 rounded">
+                {run.browser}
+              </span>
+            )}
             {run.status === 'failure' && (
               <span className="text-[10px] uppercase tracking-wide font-semibold text-red-300">
                 Failed

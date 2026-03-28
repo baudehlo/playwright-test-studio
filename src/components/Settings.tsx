@@ -3,6 +3,7 @@ import { Eye, EyeOff, Plus, Save, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import type { Settings as SettingsType } from '../types';
+import { BrowserSelector } from './BrowserSelector';
 
 const SIDEBAR_WIDTH_KEY = 'pts.layout.sidebarWidth';
 const RUN_PANEL_HEIGHT_KEY = 'pts.layout.runPanelHeight';
@@ -26,8 +27,13 @@ const PROVIDER_MODELS: Record<SettingsType['aiProvider'], string[]> = {
 };
 
 export function Settings() {
-  const { settings, saveSettings, globalVariables, saveGlobalVariables } =
-    useStore();
+  const {
+    settings,
+    saveSettings,
+    globalVariables,
+    saveGlobalVariables,
+    installedBrowsers,
+  } = useStore();
   const [form, setForm] = useState(settings);
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -183,6 +189,27 @@ export function Settings() {
           <p className="text-xs text-slate-500 mt-1">
             Select from the dropdown or enter a custom model name.
           </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Default Browsers
+          </label>
+          <p className="text-xs text-slate-500 mb-2">
+            Browsers to use when running tests. Can be overridden per collection
+            or per test.
+          </p>
+          <BrowserSelector
+            selected={form.browsers ?? []}
+            installedBrowsers={installedBrowsers}
+            onChange={(browsers) =>
+              setForm((f) => ({
+                ...f,
+                browsers: browsers.length ? browsers : undefined,
+              }))
+            }
+            inheritedLabel="No default set — tests will run in Chromium"
+          />
         </div>
 
         {(form.aiProvider === 'azure-openai' ||

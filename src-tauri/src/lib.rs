@@ -8,6 +8,8 @@ pub struct Collection {
     pub id: String,
     pub name: String,
     pub variables: std::collections::HashMap<String, String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub browsers: Option<Vec<String>>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
     #[serde(rename = "updatedAt")]
@@ -25,6 +27,8 @@ pub struct Test {
     #[serde(rename = "collectionId", skip_serializing_if = "Option::is_none")]
     pub collection_id: Option<String>,
     pub variables: std::collections::HashMap<String, String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub browsers: Option<Vec<String>>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
     #[serde(rename = "updatedAt")]
@@ -59,6 +63,8 @@ pub struct Run {
     pub id: String,
     #[serde(rename = "testId")]
     pub test_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub browser: Option<String>,
     pub status: String,
     #[serde(rename = "startedAt")]
     pub started_at: String,
@@ -81,6 +87,8 @@ pub struct Settings {
     pub model: String,
     #[serde(rename = "baseUrl", skip_serializing_if = "Option::is_none")]
     pub base_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub browsers: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -369,12 +377,70 @@ fn resolve_runner_entry(app: &AppHandle, app_data_dir: &str) -> Result<PathBuf, 
     ))
 }
 
+fn get_playwright_cache_dir() -> Option<PathBuf> {
+    #[cfg(target_os = "linux")]
+    {
+        let home = std::env::var("HOME").ok()?;
+        Some(PathBuf::from(home).join(".cache").join("ms-playwright"))
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let home = std::env::var("HOME").ok()?;
+        Some(
+            PathBuf::from(home)
+                .join("Library")
+                .join("Caches")
+                .join("ms-playwright"),
+        )
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let local_app_data = std::env::var("LOCALAPPDATA").ok()?;
+        Some(PathBuf::from(local_app_data).join("ms-playwright"))
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    {
+        None
+    }
+}
+
+#[tauri::command]
+fn get_installed_browsers() -> Vec<String> {
+    // Chromium is always included — @playwright/mcp defaults to Chromium and it
+    // is bundled with the Playwright install.
+    let mut installed = vec!["chromium".to_string()];
+
+    if let Some(dir) = get_playwright_cache_dir() {
+        for browser in &["firefox", "webkit"] {
+            let prefix = format!("{}-", browser);
+            let found = fs::read_dir(&dir)
+                .ok()
+                .map(|entries| {
+                    entries.flatten().any(|entry| {
+                        entry
+                            .file_name()
+                            .to_str()
+                            .map(|n| n.starts_with(&prefix))
+                            .unwrap_or(false)
+                    })
+                })
+                .unwrap_or(false);
+            if found {
+                installed.push(browser.to_string());
+            }
+        }
+    }
+
+    installed
+}
+
 #[tauri::command]
 fn run_test(
     app: AppHandle,
     test: Test,
     settings: Settings,
     app_data_dir: String,
+    browser: Option<String>,
 ) -> Result<String, String> {
     let runner_path = resolve_runner_entry(&app, &app_data_dir)?;
 
@@ -449,12 +515,14 @@ fn run_test(
         "storagePolicy": storage_policy,
         "chainRootTestId": chain_root_test_id,
         "profileDir": profile_dir.to_string_lossy(),
+        "browser": browser,
     });
     let config_str = serde_json::to_string(&config).map_err(|e| e.to_string())?;
 
     let app_handle = app.clone();
     let run_id_clone = run_id.clone();
     let test_id = test.id.clone();
+    let browser_clone = browser.clone();
 
     std::thread::spawn(move || {
         let result = std::process::Command::new("node")
@@ -599,6 +667,7 @@ fn run_test(
                     let fallback_run = Run {
                         id: run_id_clone.clone(),
                         test_id: test_id.clone(),
+                        browser: browser_clone.clone(),
                         status: "failure".to_string(),
                         started_at: chrono::Utc::now().to_rfc3339(),
                         completed_at: Some(chrono::Utc::now().to_rfc3339()),
@@ -729,6 +798,7 @@ pub fn run() {
             save_global_variables,
             copy_runner_to_app_dir,
             run_test,
+            get_installed_browsers,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

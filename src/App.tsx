@@ -42,6 +42,7 @@ function App() {
     loadSettings,
     loadCollections,
     loadGlobalVariables,
+    loadInstalledBrowsers,
     settings,
     selectedTestId,
     selectedCollectionId,
@@ -55,10 +56,17 @@ function App() {
       loadSettings(),
       loadCollections(),
       loadGlobalVariables(),
+      loadInstalledBrowsers(),
     ])
       .catch((e) => console.error('Failed to load app data:', e))
       .finally(() => setIsInitialDataLoaded(true));
-  }, [loadTests, loadSettings, loadCollections, loadGlobalVariables]);
+  }, [
+    loadTests,
+    loadSettings,
+    loadCollections,
+    loadGlobalVariables,
+    loadInstalledBrowsers,
+  ]);
 
   // Decide the initial page once settings are loaded.
   useEffect(() => {
