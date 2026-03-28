@@ -33,6 +33,9 @@ interface RunnerConfig {
   runDir: string;
   screenshotsDir: string;
   runId: string;
+  storagePolicy?: 'reset' | 'preserve';
+  chainRootTestId?: string;
+  profileDir?: string;
 }
 
 interface RunEvent {
@@ -114,6 +117,14 @@ function isActionLikeTool(name: string): boolean {
   );
 }
 
+function buildPlaywrightMcpArgs(config: RunnerConfig): string[] {
+  const args = ['@playwright/mcp@latest', '--no-sandbox'];
+  if (config.profileDir) {
+    args.push('--user-data-dir', config.profileDir);
+  }
+  return args;
+}
+
 async function readConfig(): Promise<RunnerConfig> {
   return new Promise((resolve, reject) => {
     let data = '';
@@ -145,6 +156,8 @@ async function main() {
   }
 
   const { test, settings, runDir, screenshotsDir, runId } = config;
+  const storagePolicy = config.storagePolicy ?? 'reset';
+  const chainRootTestId = config.chainRootTestId ?? test.id;
   const screenshots: Array<{
     id: string;
     path: string;
@@ -170,6 +183,10 @@ async function main() {
   }
 
   addLog('info', `Starting test: ${test.name}`);
+  addLog(
+    'info',
+    `Browser storage policy: ${storagePolicy} (chain root: ${chainRootTestId})`,
+  );
 
   const expandedScript = expandVariables(test.script, test.variables);
   addLog('info', `Expanded script variables`);
@@ -203,7 +220,7 @@ async function main() {
     addLog('info', 'Connecting to Playwright MCP server...');
     transport = new StdioClientTransport({
       command: 'npx',
-      args: ['@playwright/mcp@latest', '--no-sandbox'],
+      args: buildPlaywrightMcpArgs(config),
     });
 
     mcpClient = new Client(

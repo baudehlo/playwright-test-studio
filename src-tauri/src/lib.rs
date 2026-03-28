@@ -345,6 +345,39 @@ fn run_test(
         }
     }
 
+    // Browser state policy:
+    // - Root runs start clean (reset profile)
+    // - Descendant runs preserve profile so chain runs can continue statefully
+    let chain_root_test_id = parent_tests
+        .first()
+        .map(|t| t.id.clone())
+        .unwrap_or_else(|| test.id.clone());
+    let storage_policy = if parent_tests.is_empty() {
+        "reset"
+    } else {
+        "preserve"
+    };
+
+    let profile_dir = PathBuf::from(&app_data_dir)
+        .join("browser-profiles")
+        .join(&chain_root_test_id);
+
+    if storage_policy == "reset" && profile_dir.exists() {
+        fs::remove_dir_all(&profile_dir).map_err(|e| {
+            format!(
+                "Failed to clear browser profile for chain root '{}': {}",
+                chain_root_test_id, e
+            )
+        })?;
+    }
+
+    fs::create_dir_all(&profile_dir).map_err(|e| {
+        format!(
+            "Failed to prepare browser profile for chain root '{}': {}",
+            chain_root_test_id, e
+        )
+    })?;
+
     let config = serde_json::json!({
         "test": test,
         "parentTests": parent_tests,
@@ -352,6 +385,9 @@ fn run_test(
         "runDir": run_dir.to_string_lossy(),
         "screenshotsDir": screenshots_dir.to_string_lossy(),
         "runId": run_id,
+        "storagePolicy": storage_policy,
+        "chainRootTestId": chain_root_test_id,
+        "profileDir": profile_dir.to_string_lossy(),
     });
     let config_str = serde_json::to_string(&config).map_err(|e| e.to_string())?;
 

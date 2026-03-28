@@ -96,6 +96,13 @@ To create a child test:
 3. Watch the log panel at the bottom for progress
 4. Screenshots are captured automatically during the test
 
+### Browser State Behavior
+
+- **Root tests start clean**: when you run a top-level test (no parent), the browser profile for that chain is reset before the run.
+- **Child tests preserve chain state**: when you run a child test, it reuses the same browser profile as its parent chain so cookies, local storage, and active sessions can continue.
+- **Persistence across restarts**: child-chain browser state is preserved between app restarts.
+- **Isolation by chain**: each test chain uses its own browser profile, so unrelated chains do not share browser state.
+
 ## Viewing Results
 
 ### Run History

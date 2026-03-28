@@ -16,6 +16,18 @@ interface TestData {
   variables: Record<string, string>;
 }
 
+interface RunnerConfigLike {
+  profileDir?: string;
+}
+
+function buildPlaywrightMcpArgs(config: RunnerConfigLike): string[] {
+  const args = ['@playwright/mcp@latest', '--no-sandbox'];
+  if (config.profileDir) {
+    args.push('--user-data-dir', config.profileDir);
+  }
+  return args;
+}
+
 function buildFullScript(test: TestData, parentTests: TestData[]): string {
   const expandedScript = expandVariables(test.script, test.variables);
   if (parentTests.length === 0) return expandedScript;
@@ -237,5 +249,27 @@ describe('parseNetworkFailures (browser_network_requests parsing)', () => {
     ];
     const failures = parseNetworkFailures(content);
     expect(failures).toHaveLength(1);
+  });
+});
+
+describe('buildPlaywrightMcpArgs (browser profile behavior)', () => {
+  it('uses default args when no profile dir is provided', () => {
+    expect(buildPlaywrightMcpArgs({})).toEqual([
+      '@playwright/mcp@latest',
+      '--no-sandbox',
+    ]);
+  });
+
+  it('passes user-data-dir when profile dir is provided', () => {
+    expect(
+      buildPlaywrightMcpArgs({
+        profileDir: '/tmp/browser-profiles/root-test-id',
+      }),
+    ).toEqual([
+      '@playwright/mcp@latest',
+      '--no-sandbox',
+      '--user-data-dir',
+      '/tmp/browser-profiles/root-test-id',
+    ]);
   });
 });
