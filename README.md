@@ -1,6 +1,6 @@
 # Playwright Test Studio
 
-A Tauri desktop application for QA engineers: write plain-English test scripts and run them via an AI agent that controls a real browser using [Playwright MCP](https://github.com/microsoft/playwright-mcp).
+A desktop application for QA engineers: write plain-English test scripts and run them via an AI agent that controls a real browser using [Playwright MCP](https://github.com/microsoft/playwright-mcp).
 
 <p align="center">
   <img src="docs/screenshots/pts-carousel.gif" alt="Playwright Test Studio screenshots" width="720" />
@@ -21,10 +21,11 @@ A Tauri desktop application for QA engineers: write plain-English test scripts a
 
 ### Prerequisites
 
-- [Node.js 18+](https://nodejs.org/)
 - An API key for your preferred AI provider (OpenAI, Anthropic, Groq, Azure OpenAI, or xAI)
 
 ### Running from source
+
+Prerequisites: [Node.js 18+](https://nodejs.org/)
 
 ```bash
 # Install dependencies
@@ -58,6 +59,8 @@ See [docs/README.md](docs/README.md) for full documentation including:
 - Run history
 
 ## Development
+
+This application is built with [Tauri](https://tauri.app/) (Rust backend + web frontend).
 
 ```bash
 # Type checking
