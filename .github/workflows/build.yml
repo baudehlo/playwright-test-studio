@@ -52,6 +52,23 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          # Apple code signing — set these secrets in your repo to produce a
+          # signed + notarized macOS .app that passes Gatekeeper.
+          #
+          # How to obtain them:
+          #   APPLE_CERTIFICATE          – base64 of your "Developer ID Application" .p12
+          #                               export (openssl base64 -in cert.p12 | pbcopy)
+          #   APPLE_CERTIFICATE_PASSWORD – the password you set when exporting the .p12
+          #   APPLE_SIGNING_IDENTITY     – e.g. "Developer ID Application: Your Name (TEAMID)"
+          #   APPLE_ID                   – your Apple ID email
+          #   APPLE_PASSWORD             – an app-specific password from appleid.apple.com
+          #   APPLE_TEAM_ID              – your 10-char Team ID from developer.apple.com
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: v${{ inputs.version }}
           releaseName: 'v${{ inputs.version }}'

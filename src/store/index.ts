@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { create } from 'zustand';
 import type {
+  BrowserName,
   Collection,
   HttpFailure,
   LogEntry,
@@ -40,6 +41,7 @@ interface AppState {
   currentRunLog: LogEntry[];
   currentRunScreenshots: Screenshot[];
   currentRunHttpFailures: HttpFailure[];
+  installedBrowsers: BrowserName[];
 
   loadTests: () => Promise<void>;
   saveTest: (test: Test) => Promise<void>;
@@ -59,6 +61,7 @@ interface AppState {
   runTest: (test: Test) => Promise<void>;
   loadSettings: () => Promise<void>;
   saveSettings: (settings: Settings) => Promise<void>;
+  loadInstalledBrowsers: () => Promise<void>;
 }
 
 const defaultSettings: Settings = {
@@ -81,6 +84,7 @@ export const useStore = create<AppState>((set, get) => ({
   currentRunLog: [],
   currentRunScreenshots: [],
   currentRunHttpFailures: [],
+  installedBrowsers: ['chromium'],
 
   loadTests: async () => {
     try {
@@ -197,6 +201,13 @@ export const useStore = create<AppState>((set, get) => ({
     };
     const testWithMergedVars: Test = { ...test, variables: mergedVariables };
 
+    // Determine effective browser list: test > collection > global > default ['chromium']
+    const effectiveBrowsers: BrowserName[] = (test.browsers?.length
+      ? test.browsers
+      : null) ??
+      (collection?.browsers?.length ? collection.browsers : null) ??
+      (settings.browsers?.length ? settings.browsers : null) ?? ['chromium'];
+
     set({
       isRunning: true,
       currentRunId: null,
@@ -205,110 +216,136 @@ export const useStore = create<AppState>((set, get) => ({
       currentRunHttpFailures: [],
     });
 
-    try {
-      const unlisten = await listen<RunEvent>('run-event', (event) => {
-        const data = event.payload;
-        set((state) => {
-          switch (data.type) {
-            case 'log':
-              return {
-                currentRunLog: [
-                  ...state.currentRunLog,
-                  {
-                    level: data.level ?? 'info',
-                    message: data.message ?? '',
-                    timestamp: data.timestamp ?? new Date().toISOString(),
-                  },
-                ],
-              };
-            case 'screenshot':
-              if (!data.id) {
-                console.warn(
-                  '[run-event] screenshot event missing id field',
-                  data,
-                );
-              }
-              return {
-                currentRunScreenshots: [
-                  ...state.currentRunScreenshots,
-                  {
-                    id: data.id ?? crypto.randomUUID(),
-                    path: data.path ?? '',
-                    description: data.description ?? '',
-                    timestamp: data.timestamp ?? new Date().toISOString(),
-                  },
-                ],
-              };
-            case 'http_failure':
-              return {
-                currentRunHttpFailures: [
-                  ...state.currentRunHttpFailures,
-                  {
-                    url: data.url ?? '',
-                    method: data.method ?? 'GET',
-                    status: typeof data.status === 'number' ? data.status : 0,
-                    timestamp: data.timestamp ?? new Date().toISOString(),
-                  },
-                ],
-              };
-            case 'complete':
-              if (data.status === 'failure') {
-                return {
-                  currentRunLog: [
-                    ...state.currentRunLog,
-                    {
-                      level: 'error',
-                      message: data.error ?? data.message ?? 'Test run failed',
-                      timestamp: data.timestamp ?? new Date().toISOString(),
-                    },
-                  ],
-                };
-              }
-              return {};
-            case 'error':
+    const appDataDir = await invoke<string>('get_app_data_dir');
+
+    const processEvent = (data: RunEvent) => {
+      set((state) => {
+        switch (data.type) {
+          case 'log':
+            return {
+              currentRunLog: [
+                ...state.currentRunLog,
+                {
+                  level: data.level ?? 'info',
+                  message: data.message ?? '',
+                  timestamp: data.timestamp ?? new Date().toISOString(),
+                },
+              ],
+            };
+          case 'screenshot':
+            if (!data.id) {
+              console.warn(
+                '[run-event] screenshot event missing id field',
+                data,
+              );
+            }
+            return {
+              currentRunScreenshots: [
+                ...state.currentRunScreenshots,
+                {
+                  id: data.id ?? crypto.randomUUID(),
+                  path: data.path ?? '',
+                  description: data.description ?? '',
+                  timestamp: data.timestamp ?? new Date().toISOString(),
+                },
+              ],
+            };
+          case 'http_failure':
+            return {
+              currentRunHttpFailures: [
+                ...state.currentRunHttpFailures,
+                {
+                  url: data.url ?? '',
+                  method: data.method ?? 'GET',
+                  status: typeof data.status === 'number' ? data.status : 0,
+                  timestamp: data.timestamp ?? new Date().toISOString(),
+                },
+              ],
+            };
+          case 'complete':
+            if (data.status === 'failure') {
               return {
                 currentRunLog: [
                   ...state.currentRunLog,
                   {
                     level: 'error',
-                    message: data.error ?? data.message ?? 'Runner error',
+                    message: data.error ?? data.message ?? 'Test run failed',
                     timestamp: data.timestamp ?? new Date().toISOString(),
                   },
                 ],
               };
-            default:
-              return {};
-          }
-        });
-
-        if (data.type === 'complete' || data.type === 'error') {
-          unlisten();
-          set({ isRunning: false });
-          if (test.id) get().loadRuns(test.id);
+            }
+            return {};
+          case 'error':
+            return {
+              currentRunLog: [
+                ...state.currentRunLog,
+                {
+                  level: 'error',
+                  message: data.error ?? data.message ?? 'Runner error',
+                  timestamp: data.timestamp ?? new Date().toISOString(),
+                },
+              ],
+            };
+          default:
+            return {};
         }
       });
+    };
 
-      const appDataDir = await invoke<string>('get_app_data_dir');
-      const runId = await invoke<string>('run_test', {
-        test: testWithMergedVars,
-        settings,
-        appDataDir,
-      });
-      set({ currentRunId: runId });
-    } catch (e) {
-      console.error('Failed to run test:', e);
-      set({
-        isRunning: false,
-        currentRunId: null,
-        currentRunLog: [
-          {
-            level: 'error',
-            message: String(e),
-            timestamp: new Date().toISOString(),
-          },
-        ],
-      });
+    for (const browser of effectiveBrowsers) {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          let unlisten: (() => void) | null = null;
+
+          listen<RunEvent>('run-event', (event) => {
+            const data = event.payload;
+            processEvent(data);
+            if (data.type === 'complete' || data.type === 'error') {
+              if (unlisten) {
+                unlisten();
+              }
+              if (test.id) get().loadRuns(test.id);
+              resolve();
+            }
+          })
+            .then((fn) => {
+              unlisten = fn;
+            })
+            .catch(reject);
+
+          invoke<string>('run_test', {
+            test: testWithMergedVars,
+            settings,
+            appDataDir,
+            browser,
+          })
+            .then((runId) => {
+              set({ currentRunId: runId });
+            })
+            .catch((e) => {
+              if (unlisten) {
+                unlisten();
+              }
+              reject(e);
+            });
+        });
+      } catch (e) {
+        console.error(`Failed to run test with browser ${browser}:`, e);
+        set((state) => ({
+          currentRunLog: [
+            ...state.currentRunLog,
+            {
+              level: 'error',
+              message: String(e),
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        }));
+      }
     }
+
+    set({ isRunning: false });
   },
 
   loadSettings: async () => {
@@ -323,5 +360,14 @@ export const useStore = create<AppState>((set, get) => ({
   saveSettings: async (settings: Settings) => {
     await invoke('save_settings', { settings });
     set({ settings });
+  },
+
+  loadInstalledBrowsers: async () => {
+    try {
+      const browsers = await invoke<string[]>('get_installed_browsers');
+      set({ installedBrowsers: browsers as BrowserName[] });
+    } catch (e) {
+      console.error('Failed to load installed browsers:', e);
+    }
   },
 }));

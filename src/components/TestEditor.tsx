@@ -1,15 +1,24 @@
 import { Play, Plus, Save, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
-import type { Test } from '../types';
+import type { BrowserName, Test } from '../types';
+import { BrowserSelector } from './BrowserSelector';
 
 export function TestEditor() {
-  const { tests, selectedTestId, saveTest, runTest, isRunning } = useStore();
+  const {
+    tests,
+    selectedTestId,
+    saveTest,
+    runTest,
+    isRunning,
+    installedBrowsers,
+  } = useStore();
   const selectedTest = tests.find((t) => t.id === selectedTestId) ?? null;
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [script, setScript] = useState('');
+  const [browsers, setBrowsers] = useState<BrowserName[]>([]);
   const [variables, setVariables] = useState<
     Array<{ key: string; value: string }>
   >([]);
@@ -22,6 +31,7 @@ export function TestEditor() {
       setName(selectedTest.name);
       setDescription(selectedTest.description);
       setScript(selectedTest.script);
+      setBrowsers(selectedTest.browsers ?? []);
       setVariables(
         Object.entries(selectedTest.variables).map(([key, value]) => ({
           key,
@@ -46,6 +56,7 @@ export function TestEditor() {
       name,
       description,
       script,
+      browsers: browsers.length ? browsers : undefined,
       variables: varsRecord,
       updatedAt: new Date().toISOString(),
     };
@@ -61,6 +72,7 @@ export function TestEditor() {
       name,
       description,
       script,
+      browsers: browsers.length ? browsers : undefined,
       variables: Object.fromEntries(
         variables
           .filter((v) => v.key.trim())
@@ -141,6 +153,21 @@ export function TestEditor() {
             }}
             placeholder="Brief description of what this test does"
             className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-violet-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-2">
+            Browsers
+          </label>
+          <BrowserSelector
+            selected={browsers}
+            installedBrowsers={installedBrowsers}
+            onChange={(b) => {
+              setBrowsers(b);
+              markDirty();
+            }}
+            inheritedLabel="Inherit from collection or global settings"
           />
         </div>
 

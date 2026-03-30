@@ -13,7 +13,8 @@
     "lint:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "bundle-runner": "cd runner && npm run build"
+    "bundle-runner": "cd runner && npm install && npm run build",
+    "cargo-check": "cargo check --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
