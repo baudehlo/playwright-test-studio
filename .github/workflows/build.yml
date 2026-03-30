@@ -72,4 +72,5 @@ jobs:
         with:
           tagName: v${{ inputs.version }}
           releaseName: 'v${{ inputs.version }}'
+          generateReleaseNotes: true
           args: ${{ matrix.args }}
