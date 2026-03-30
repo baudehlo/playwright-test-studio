@@ -56,7 +56,13 @@ export interface LogEntry {
 }
 
 export interface Settings {
-  aiProvider: 'openai' | 'anthropic' | 'azure-openai' | 'groq' | 'xai' | 'github';
+  aiProvider:
+    | 'openai'
+    | 'anthropic'
+    | 'azure-openai'
+    | 'groq'
+    | 'xai'
+    | 'github';
   apiKey: string;
   model: string;
   baseUrl?: string;

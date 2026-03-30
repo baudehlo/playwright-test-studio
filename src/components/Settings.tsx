@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { Eye, EyeOff, Plus, Save, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Eye, EyeOff, Plus, RefreshCw, Save, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import type { Settings as SettingsType } from '../types';
 import { BrowserSelector } from './BrowserSelector';
@@ -36,6 +36,78 @@ const PROVIDER_MODELS: Record<SettingsType['aiProvider'], string[]> = {
   ],
 };
 
+async function getModelsFromApi(
+  provider: SettingsType['aiProvider'],
+  apiKey: string,
+  baseUrl?: string,
+): Promise<string[]> {
+  switch (provider) {
+    case 'openai': {
+      const res = await fetch('https://api.openai.com/v1/models', {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (!res.ok) return [];
+      const data: { data: { id: string }[] } = await res.json();
+      return (data.data ?? [])
+        .map((m) => m.id)
+        .filter((id) => /^(gpt-|o1|o3|o4|chatgpt-)/.test(id))
+        .sort((a, b) => b.localeCompare(a));
+    }
+    case 'anthropic': {
+      const res = await fetch('https://api.anthropic.com/v1/models', {
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+      });
+      if (!res.ok) return [];
+      const data: { data: { id: string }[] } = await res.json();
+      return (data.data ?? []).map((m) => m.id);
+    }
+    case 'azure-openai': {
+      if (!baseUrl) return [];
+      const url = `${baseUrl.replace(/\/$/, '')}/openai/deployments?api-version=2024-02-01`;
+      const res = await fetch(url, { headers: { 'api-key': apiKey } });
+      if (!res.ok) return [];
+      const data: { value: { id: string }[] } = await res.json();
+      return (data.value ?? []).map((d) => d.id);
+    }
+    case 'groq': {
+      const base = baseUrl ?? 'https://api.groq.com/openai/v1';
+      const res = await fetch(`${base.replace(/\/$/, '')}/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (!res.ok) return [];
+      const data: { data: { id: string }[] } = await res.json();
+      return (data.data ?? []).map((m) => m.id);
+    }
+    case 'xai': {
+      const base = baseUrl ?? 'https://api.x.ai/v1';
+      const res = await fetch(`${base.replace(/\/$/, '')}/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (!res.ok) return [];
+      const data: { data: { id: string }[] } = await res.json();
+      return (data.data ?? []).map((m) => m.id);
+    }
+    case 'github': {
+      const res = await fetch('https://models.inference.ai.azure.com/models', {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (!res.ok) return [];
+      const raw: unknown = await res.json();
+      if (Array.isArray(raw)) {
+        return (raw as { name?: string; id?: string }[])
+          .map((m) => m.name ?? m.id ?? '')
+          .filter(Boolean);
+      }
+      return ((raw as { data: { id: string }[] }).data ?? []).map((m) => m.id);
+    }
+    default:
+      return [];
+  }
+}
+
 export function Settings() {
   const {
     settings,
@@ -63,6 +135,49 @@ export function Settings() {
       Object.entries(globalVariables).map(([key, value]) => ({ key, value })),
     );
   }, [globalVariables]);
+
+  const [fetchedModels, setFetchedModels] = useState<string[] | null>(null);
+  const [fetchingModels, setFetchingModels] = useState(false);
+
+  // Keep a ref to the latest apiKey so the auto-fetch effect doesn't
+  // re-run on every keystroke as the user types their key.
+  const apiKeyRef = useRef(form.apiKey);
+  useEffect(() => {
+    apiKeyRef.current = form.apiKey;
+  }, [form.apiKey]);
+
+  const handleFetchModels = async () => {
+    if (!form.apiKey) return;
+    setFetchingModels(true);
+    try {
+      const fetched = await getModelsFromApi(
+        form.aiProvider,
+        form.apiKey,
+        form.baseUrl,
+      );
+      setFetchedModels(fetched.length > 0 ? fetched : null);
+    } catch {
+      setFetchedModels(null);
+    } finally {
+      setFetchingModels(false);
+    }
+  };
+
+  // Auto-fetch when provider or baseUrl changes (or on first mount).
+  // Using apiKeyRef avoids adding apiKey to the deps and firing on every keystroke.
+  useEffect(() => {
+    setFetchedModels(null);
+    if (apiKeyRef.current) {
+      setFetchingModels(true);
+      getModelsFromApi(form.aiProvider, apiKeyRef.current, form.baseUrl)
+        .then((fetched) =>
+          setFetchedModels(fetched.length > 0 ? fetched : null),
+        )
+        .catch(() => setFetchedModels(null))
+        .finally(() => setFetchingModels(false));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.aiProvider, form.baseUrl]);
 
   const handleSave = async () => {
     await saveSettings(form);
@@ -116,7 +231,7 @@ export function Settings() {
     window.location.reload();
   };
 
-  const models = PROVIDER_MODELS[form.aiProvider] ?? [];
+  const models = fetchedModels ?? PROVIDER_MODELS[form.aiProvider] ?? [];
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -175,8 +290,22 @@ export function Settings() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
             Model
+            <button
+              type="button"
+              onClick={handleFetchModels}
+              disabled={!form.apiKey || fetchingModels}
+              title="Fetch available models from API"
+              className="text-slate-500 hover:text-slate-300 disabled:opacity-40 transition-colors"
+            >
+              <RefreshCw
+                className={`w-3 h-3 ${fetchingModels ? 'animate-spin' : ''}`}
+              />
+            </button>
+            {fetchedModels && (
+              <span className="text-xs text-emerald-500 font-normal">live</span>
+            )}
           </label>
           <div className="flex gap-2">
             <select
@@ -198,7 +327,9 @@ export function Settings() {
             />
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Select from the dropdown or enter a custom model name.
+            {fetchedModels
+              ? 'Showing live models from your API. Click ↺ to refresh.'
+              : 'Select from the dropdown or enter a custom model name. Click ↺ to load live models.'}
           </p>
         </div>
 
