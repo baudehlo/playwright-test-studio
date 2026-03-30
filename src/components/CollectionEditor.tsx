@@ -1,14 +1,21 @@
 import { Plus, Save, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
-import type { Collection } from '../types';
+import type { BrowserName, Collection } from '../types';
+import { BrowserSelector } from './BrowserSelector';
 
 export function CollectionEditor() {
-  const { collections, selectedCollectionId, saveCollection } = useStore();
+  const {
+    collections,
+    selectedCollectionId,
+    saveCollection,
+    installedBrowsers,
+  } = useStore();
   const selectedCollection =
     collections.find((c) => c.id === selectedCollectionId) ?? null;
 
   const [name, setName] = useState('');
+  const [browsers, setBrowsers] = useState<BrowserName[]>([]);
   const [variables, setVariables] = useState<
     Array<{ key: string; value: string }>
   >([]);
@@ -17,6 +24,7 @@ export function CollectionEditor() {
   useEffect(() => {
     if (selectedCollection) {
       setName(selectedCollection.name);
+      setBrowsers(selectedCollection.browsers ?? []);
       setVariables(
         Object.entries(selectedCollection.variables).map(([key, value]) => ({
           key,
@@ -39,6 +47,7 @@ export function CollectionEditor() {
     const updated: Collection = {
       ...selectedCollection,
       name,
+      browsers: browsers.length ? browsers : undefined,
       variables: varsRecord,
       updatedAt: new Date().toISOString(),
     };
@@ -95,6 +104,25 @@ export function CollectionEditor() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-2">
+            Browsers
+          </label>
+          <p className="text-xs text-slate-500 mb-2">
+            Run tests in these browsers. Overrides the global default; can be
+            overridden per test.
+          </p>
+          <BrowserSelector
+            selected={browsers}
+            installedBrowsers={installedBrowsers}
+            onChange={(b) => {
+              setBrowsers(b);
+              markDirty();
+            }}
+            inheritedLabel="Inherit from global settings"
+          />
+        </div>
+
         <div>
           <p className="text-xs text-slate-500 mb-3">
             Collection variables are available to all tests in this collection.

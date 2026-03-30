@@ -8,6 +8,8 @@ pub struct Collection {
     pub id: String,
     pub name: String,
     pub variables: std::collections::HashMap<String, String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub browsers: Option<Vec<String>>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
     #[serde(rename = "updatedAt")]
@@ -25,6 +27,8 @@ pub struct Test {
     #[serde(rename = "collectionId", skip_serializing_if = "Option::is_none")]
     pub collection_id: Option<String>,
     pub variables: std::collections::HashMap<String, String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub browsers: Option<Vec<String>>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
     #[serde(rename = "updatedAt")]
@@ -59,6 +63,8 @@ pub struct Run {
     pub id: String,
     #[serde(rename = "testId")]
     pub test_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub browser: Option<String>,
     pub status: String,
     #[serde(rename = "startedAt")]
     pub started_at: String,
@@ -81,10 +87,54 @@ pub struct Settings {
     pub model: String,
     #[serde(rename = "baseUrl", skip_serializing_if = "Option::is_none")]
     pub base_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub browsers: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WindowState {
+    pub width: u32,
+    pub height: u32,
+    pub x: i32,
+    pub y: i32,
 }
 
 fn get_app_data_path(app: &AppHandle) -> PathBuf {
     app.path().app_data_dir().expect("Failed to get app data dir")
+}
+
+fn load_window_state_from_disk(app: &AppHandle) -> Option<WindowState> {
+    let path = get_app_data_path(app).join("window-state.json");
+    if !path.exists() {
+        return None;
+    }
+    let data = fs::read_to_string(&path).ok()?;
+    serde_json::from_str(&data).ok()
+}
+
+fn save_window_state_to_disk(app: &AppHandle, state: &WindowState) -> Result<(), String> {
+    let dir = get_app_data_path(app);
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let path = dir.join("window-state.json");
+    let data = serde_json::to_string_pretty(state).map_err(|e| e.to_string())?;
+    fs::write(path, data).map_err(|e| e.to_string())
+}
+
+fn is_window_state_visible_on_monitor(state: &WindowState, monitor: &tauri::Monitor) -> bool {
+    let window_left = i64::from(state.x);
+    let window_top = i64::from(state.y);
+    let window_right = window_left + i64::from(state.width);
+    let window_bottom = window_top + i64::from(state.height);
+
+    let monitor_left = i64::from(monitor.position().x);
+    let monitor_top = i64::from(monitor.position().y);
+    let monitor_right = monitor_left + i64::from(monitor.size().width);
+    let monitor_bottom = monitor_top + i64::from(monitor.size().height);
+
+    let overlap_width = std::cmp::min(window_right, monitor_right) - std::cmp::max(window_left, monitor_left);
+    let overlap_height = std::cmp::min(window_bottom, monitor_bottom) - std::cmp::max(window_top, monitor_top);
+
+    overlap_width >= 80 && overlap_height >= 80
 }
 
 #[tauri::command]
@@ -196,6 +246,7 @@ fn get_settings(app: AppHandle) -> Settings {
             api_key: String::new(),
             model: "gpt-4o".to_string(),
             base_url: None,
+            browsers: None,
         };
     }
     let data = fs::read_to_string(&path).unwrap_or_default();
@@ -204,6 +255,7 @@ fn get_settings(app: AppHandle) -> Settings {
         api_key: String::new(),
         model: "gpt-4o".to_string(),
         base_url: None,
+        browsers: None,
     })
 }
 
@@ -214,6 +266,25 @@ fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
     let path = dir.join("settings.json");
     let data = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
     fs::write(path, data).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_window_state(app: AppHandle) -> Option<WindowState> {
+    load_window_state_from_disk(&app)
+}
+
+#[tauri::command]
+fn save_window_state(app: AppHandle, state: WindowState) -> Result<(), String> {
+    save_window_state_to_disk(&app, &state)
+}
+
+#[tauri::command]
+fn clear_window_state(app: AppHandle) -> Result<(), String> {
+    let path = get_app_data_path(&app).join("window-state.json");
+    if path.exists() {
+        fs::remove_file(path).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -308,12 +379,70 @@ fn resolve_runner_entry(app: &AppHandle, app_data_dir: &str) -> Result<PathBuf, 
     ))
 }
 
+fn get_playwright_cache_dir() -> Option<PathBuf> {
+    #[cfg(target_os = "linux")]
+    {
+        let home = std::env::var("HOME").ok()?;
+        Some(PathBuf::from(home).join(".cache").join("ms-playwright"))
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let home = std::env::var("HOME").ok()?;
+        Some(
+            PathBuf::from(home)
+                .join("Library")
+                .join("Caches")
+                .join("ms-playwright"),
+        )
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let local_app_data = std::env::var("LOCALAPPDATA").ok()?;
+        Some(PathBuf::from(local_app_data).join("ms-playwright"))
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    {
+        None
+    }
+}
+
+#[tauri::command]
+fn get_installed_browsers() -> Vec<String> {
+    // Chromium is always included — @playwright/mcp defaults to Chromium and it
+    // is bundled with the Playwright install.
+    let mut installed = vec!["chromium".to_string()];
+
+    if let Some(dir) = get_playwright_cache_dir() {
+        for browser in &["firefox", "webkit"] {
+            let prefix = format!("{}-", browser);
+            let found = fs::read_dir(&dir)
+                .ok()
+                .map(|entries| {
+                    entries.flatten().any(|entry| {
+                        entry
+                            .file_name()
+                            .to_str()
+                            .map(|n| n.starts_with(&prefix))
+                            .unwrap_or(false)
+                    })
+                })
+                .unwrap_or(false);
+            if found {
+                installed.push(browser.to_string());
+            }
+        }
+    }
+
+    installed
+}
+
 #[tauri::command]
 fn run_test(
     app: AppHandle,
     test: Test,
     settings: Settings,
     app_data_dir: String,
+    browser: Option<String>,
 ) -> Result<String, String> {
     let runner_path = resolve_runner_entry(&app, &app_data_dir)?;
 
@@ -388,12 +517,14 @@ fn run_test(
         "storagePolicy": storage_policy,
         "chainRootTestId": chain_root_test_id,
         "profileDir": profile_dir.to_string_lossy(),
+        "browser": browser,
     });
     let config_str = serde_json::to_string(&config).map_err(|e| e.to_string())?;
 
     let app_handle = app.clone();
     let run_id_clone = run_id.clone();
     let test_id = test.id.clone();
+    let browser_clone = browser.clone();
 
     std::thread::spawn(move || {
         let result = std::process::Command::new("node")
@@ -532,6 +663,26 @@ fn run_test(
                             "runId": run_id_clone,
                         }),
                     );
+
+                    // Persist a fallback failed run so terminal failures still
+                    // appear in run history and logs are accessible.
+                    let fallback_run = Run {
+                        id: run_id_clone.clone(),
+                        test_id: test_id.clone(),
+                        browser: browser_clone.clone(),
+                        status: "failure".to_string(),
+                        started_at: chrono::Utc::now().to_rfc3339(),
+                        completed_at: Some(chrono::Utc::now().to_rfc3339()),
+                        screenshots: Vec::new(),
+                        http_failures: Vec::new(),
+                        log: vec![LogEntry {
+                            level: "error".to_string(),
+                            message: message.clone(),
+                            timestamp: chrono::Utc::now().to_rfc3339(),
+                        }],
+                        error: Some(message),
+                    };
+                    let _ = save_run(app_handle.clone(), test_id.clone(), fallback_run);
                 }
 
                 // Load and save final run from run.json if it exists
@@ -555,6 +706,81 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
+        .setup(|app| {
+            if let Some(window) = app.get_webview_window("main") {
+                let app_handle = app.handle().clone();
+
+                if let Some(state) = load_window_state_from_disk(&app_handle) {
+                    let _ = window.set_size(tauri::Size::Physical(tauri::PhysicalSize::new(
+                        state.width,
+                        state.height,
+                    )));
+
+                    let apply_saved_position = window
+                        .available_monitors()
+                        .map(|monitors| {
+                            monitors.is_empty()
+                                || monitors
+                                    .iter()
+                                    .any(|m| is_window_state_visible_on_monitor(&state, m))
+                        })
+                        .unwrap_or(true);
+
+                    if apply_saved_position {
+                        let _ = window.set_position(tauri::Position::Physical(
+                            tauri::PhysicalPosition::new(state.x, state.y),
+                        ));
+                    } else {
+                        let _ = window.center();
+                    }
+                } else if let (Ok(size), Ok(position)) = (window.inner_size(), window.outer_position()) {
+                    let _ = save_window_state_to_disk(
+                        &app_handle,
+                        &WindowState {
+                            width: size.width,
+                            height: size.height,
+                            x: position.x,
+                            y: position.y,
+                        },
+                    );
+                }
+
+                let window_for_events = window.clone();
+                window.on_window_event(move |event| {
+                    match event {
+                        tauri::WindowEvent::Resized(size) => {
+                            if let Ok(position) = window_for_events.outer_position() {
+                                let _ = save_window_state_to_disk(
+                                    &app_handle,
+                                    &WindowState {
+                                        width: size.width,
+                                        height: size.height,
+                                        x: position.x,
+                                        y: position.y,
+                                    },
+                                );
+                            }
+                        }
+                        tauri::WindowEvent::Moved(position) => {
+                            if let Ok(size) = window_for_events.inner_size() {
+                                let _ = save_window_state_to_disk(
+                                    &app_handle,
+                                    &WindowState {
+                                        width: size.width,
+                                        height: size.height,
+                                        x: position.x,
+                                        y: position.y,
+                                    },
+                                );
+                            }
+                        }
+                        _ => {}
+                    }
+                });
+            }
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_app_data_dir,
             get_tests,
@@ -565,12 +791,16 @@ pub fn run() {
             get_screenshot_data,
             get_settings,
             save_settings,
+            get_window_state,
+            save_window_state,
+            clear_window_state,
             get_collections,
             save_collections,
             get_global_variables,
             save_global_variables,
             copy_runner_to_app_dir,
             run_test,
+            get_installed_browsers,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

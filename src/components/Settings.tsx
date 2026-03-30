@@ -1,7 +1,13 @@
+import { invoke } from '@tauri-apps/api/core';
 import { Eye, EyeOff, Plus, Save, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import type { Settings as SettingsType } from '../types';
+import { BrowserSelector } from './BrowserSelector';
+
+const SIDEBAR_WIDTH_KEY = 'pts.layout.sidebarWidth';
+const RUN_PANEL_HEIGHT_KEY = 'pts.layout.runPanelHeight';
+const SCREENSHOTS_WIDTH_KEY = 'pts.layout.runPanel.screenshotsWidth';
 
 const PROVIDER_MODELS: Record<SettingsType['aiProvider'], string[]> = {
   openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'o1', 'o1-mini'],
@@ -31,8 +37,13 @@ const PROVIDER_MODELS: Record<SettingsType['aiProvider'], string[]> = {
 };
 
 export function Settings() {
-  const { settings, saveSettings, globalVariables, saveGlobalVariables } =
-    useStore();
+  const {
+    settings,
+    saveSettings,
+    globalVariables,
+    saveGlobalVariables,
+    installedBrowsers,
+  } = useStore();
   const [form, setForm] = useState(settings);
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -41,6 +52,7 @@ export function Settings() {
   >([]);
   const [globalVarsDirty, setGlobalVarsDirty] = useState(false);
   const [globalVarsSaved, setGlobalVarsSaved] = useState(false);
+  const [layoutReset, setLayoutReset] = useState(false);
 
   useEffect(() => {
     setForm(settings);
@@ -92,6 +104,16 @@ export function Settings() {
 
   const field = (key: keyof SettingsType, value: string) => {
     setForm((f) => ({ ...f, [key]: value }));
+  };
+
+  const handleResetLayout = async () => {
+    window.localStorage.removeItem(SIDEBAR_WIDTH_KEY);
+    window.localStorage.removeItem(RUN_PANEL_HEIGHT_KEY);
+    window.localStorage.removeItem(SCREENSHOTS_WIDTH_KEY);
+    await invoke('clear_window_state');
+    setLayoutReset(true);
+    setTimeout(() => setLayoutReset(false), 2000);
+    window.location.reload();
   };
 
   const models = PROVIDER_MODELS[form.aiProvider] ?? [];
@@ -178,6 +200,27 @@ export function Settings() {
           <p className="text-xs text-slate-500 mt-1">
             Select from the dropdown or enter a custom model name.
           </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Default Browsers
+          </label>
+          <p className="text-xs text-slate-500 mb-2">
+            Browsers to use when running tests. Can be overridden per collection
+            or per test.
+          </p>
+          <BrowserSelector
+            selected={form.browsers ?? []}
+            installedBrowsers={installedBrowsers}
+            onChange={(browsers) =>
+              setForm((f) => ({
+                ...f,
+                browsers: browsers.length ? browsers : undefined,
+              }))
+            }
+            inheritedLabel="No default set — tests will run in Chromium"
+          />
         </div>
 
         {(form.aiProvider === 'azure-openai' ||
@@ -290,6 +333,25 @@ export function Settings() {
             </button>
           </div>
         )}
+      </div>
+
+      <div className="mt-6 bg-slate-800 rounded-lg p-4 border border-slate-700">
+        <h2 className="text-sm font-medium text-slate-300 mb-3">Layout</h2>
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-xs text-slate-500">
+            Reset panel sizes and window size/position back to defaults.
+          </p>
+          <button
+            onClick={handleResetLayout}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+              layoutReset
+                ? 'bg-green-600 text-white'
+                : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+            }`}
+          >
+            {layoutReset ? 'Reset!' : 'Reset Layout'}
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 bg-slate-800 rounded-lg p-4 border border-slate-700">

@@ -36,6 +36,7 @@ interface RunnerConfig {
   storagePolicy?: 'reset' | 'preserve';
   chainRootTestId?: string;
   profileDir?: string;
+  browser?: string;
 }
 
 interface RunEvent {
@@ -124,6 +125,9 @@ function isActionLikeTool(name: string): boolean {
 
 function buildPlaywrightMcpArgs(config: RunnerConfig): string[] {
   const args = ['@playwright/mcp@latest', '--no-sandbox'];
+  if (config.browser) {
+    args.push('--browser', config.browser);
+  }
   if (config.profileDir) {
     args.push('--user-data-dir', config.profileDir);
   }
@@ -163,6 +167,7 @@ async function main() {
   const { test, settings, runDir, screenshotsDir, runId } = config;
   const storagePolicy = config.storagePolicy ?? 'reset';
   const chainRootTestId = config.chainRootTestId ?? test.id;
+  const browser = config.browser;
   const screenshots: Array<{
     id: string;
     path: string;
@@ -190,7 +195,7 @@ async function main() {
   addLog('info', `Starting test: ${test.name}`);
   addLog(
     'info',
-    `Browser storage policy: ${storagePolicy} (chain root: ${chainRootTestId})`,
+    `Browser: ${browser ?? 'chromium (default)'} | Storage policy: ${storagePolicy} (chain root: ${chainRootTestId})`,
   );
 
   const expandedScript = expandVariables(test.script, test.variables);
@@ -247,6 +252,7 @@ async function main() {
       httpFailures,
       logEntries,
       String(e),
+      browser,
     );
     writeRun(runDir, run);
     emit({
@@ -468,6 +474,7 @@ If any step fails, explain why.`;
       httpFailures,
       logEntries,
       undefined,
+      browser,
     );
     writeRun(runDir, run);
     emit({
@@ -500,6 +507,7 @@ If any step fails, explain why.`;
       httpFailures,
       logEntries,
       String(e),
+      browser,
     );
     writeRun(runDir, run);
     emit({
@@ -578,10 +586,12 @@ function buildRun(
   }>,
   logEntries: Array<{ level: string; message: string; timestamp: string }>,
   error: string | undefined,
+  browser: string | undefined,
 ) {
   return {
     id: runId,
     testId,
+    browser,
     status,
     startedAt: new Date().toISOString(),
     completedAt: new Date().toISOString(),

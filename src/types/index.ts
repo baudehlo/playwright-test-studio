@@ -1,7 +1,10 @@
+export type BrowserName = 'chromium' | 'firefox' | 'webkit';
+
 export interface Collection {
   id: string;
   name: string;
   variables: Record<string, string>;
+  browsers?: BrowserName[];
   createdAt: string;
   updatedAt: string;
 }
@@ -14,6 +17,7 @@ export interface Test {
   parentId?: string;
   collectionId?: string;
   variables: Record<string, string>;
+  browsers?: BrowserName[];
   createdAt: string;
   updatedAt: string;
 }
@@ -21,6 +25,7 @@ export interface Test {
 export interface Run {
   id: string;
   testId: string;
+  browser?: BrowserName;
   status: 'running' | 'success' | 'failure';
   startedAt: string;
   completedAt?: string;
@@ -55,4 +60,5 @@ export interface Settings {
   apiKey: string;
   model: string;
   baseUrl?: string;
+  browsers?: BrowserName[];
 }
