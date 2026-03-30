@@ -20,7 +20,7 @@ interface TestData {
 }
 
 interface SettingsData {
-  aiProvider: 'openai' | 'anthropic' | 'azure-openai' | 'groq' | 'xai';
+  aiProvider: 'openai' | 'anthropic' | 'azure-openai' | 'groq' | 'xai' | 'github';
   apiKey: string;
   model: string;
   baseUrl?: string;
@@ -81,6 +81,11 @@ function createProvider(settings: SettingsData) {
       return createOpenAI({
         apiKey: settings.apiKey,
         baseURL: settings.baseUrl ?? 'https://api.x.ai/v1',
+      });
+    case 'github':
+      return createOpenAI({
+        apiKey: settings.apiKey,
+        baseURL: 'https://models.inference.ai.azure.com',
       });
     default:
       return createOpenAI({ apiKey: settings.apiKey });

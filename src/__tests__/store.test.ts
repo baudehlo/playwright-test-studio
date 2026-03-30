@@ -322,8 +322,9 @@ describe('Run status tracking', () => {
       'azure-openai',
       'groq',
       'xai',
+      'github',
     ];
-    expect(providers).toHaveLength(5);
+    expect(providers).toHaveLength(6);
     expect(providers).toContain('openai');
     expect(providers).toContain('anthropic');
   });

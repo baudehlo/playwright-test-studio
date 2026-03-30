@@ -18,6 +18,16 @@ const PROVIDER_MODELS: Record<SettingsType['aiProvider'], string[]> = {
     'mixtral-8x7b-32768',
   ],
   xai: ['grok-2-1212', 'grok-beta'],
+  github: [
+    'gpt-4o',
+    'gpt-4o-mini',
+    'o1',
+    'o1-mini',
+    'claude-3-5-sonnet',
+    'claude-3-5-haiku',
+    'meta-llama-3.1-405b-instruct',
+    'meta-llama-3.1-70b-instruct',
+  ],
 };
 
 export function Settings() {
@@ -113,6 +123,7 @@ export function Settings() {
             <option value="azure-openai">Azure OpenAI</option>
             <option value="groq">Groq</option>
             <option value="xai">xAI / Grok</option>
+            <option value="github">GitHub Models</option>
           </select>
         </div>
 
