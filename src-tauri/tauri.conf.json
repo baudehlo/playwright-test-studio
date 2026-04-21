@@ -28,7 +28,8 @@
     "targets": "all",
     "externalBin": ["binaries/node"],
     "resources": {
-      "../runner/dist/runner.js": "runner.js",
+      "../runner/dist/runner.js": "runner/runner.js",
+      "../runner/node_modules": "runner/node_modules",
       "node-dist/npm": "node-dist/npm"
     },
     "icon": [

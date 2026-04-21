@@ -337,13 +337,14 @@ fn copy_runner_to_app_dir(app: AppHandle, app_data_dir: String) -> Result<(), St
         return Ok(());
     }
     // Try to find bundled runner.js
-    let resource_path = app
-        .path()
-        .resource_dir()
-        .map_err(|e| e.to_string())?
-        .join("runner.js");
-    if resource_path.exists() {
-        fs::copy(&resource_path, &dest).map_err(|e| e.to_string())?;
+    let resource_dir = app.path().resource_dir().map_err(|e| e.to_string())?;
+    let preferred_resource_path = resource_dir.join("runner").join("runner.js");
+    let legacy_resource_path = resource_dir.join("runner.js");
+
+    if preferred_resource_path.exists() {
+        fs::copy(&preferred_resource_path, &dest).map_err(|e| e.to_string())?;
+    } else if legacy_resource_path.exists() {
+        fs::copy(&legacy_resource_path, &dest).map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -358,11 +359,17 @@ fn resolve_runner_entry(app: &AppHandle, app_data_dir: &str) -> Result<PathBuf, 
         return Ok(dev_runner_entry);
     }
 
-    // Production path: bundled resource. Run from resource dir so adjacent node_modules can be resolved if bundled.
+    // Production path: bundled resource. Keep runner in a dedicated folder so
+    // ESM package imports resolve via Resources/runner/node_modules.
     if let Ok(resource_dir) = app.path().resource_dir() {
-        let resource_runner = resource_dir.join("runner.js");
-        if resource_runner.exists() {
-            return Ok(resource_runner);
+        let preferred_resource_runner = resource_dir.join("runner").join("runner.js");
+        if preferred_resource_runner.exists() {
+            return Ok(preferred_resource_runner);
+        }
+
+        let legacy_resource_runner = resource_dir.join("runner.js");
+        if legacy_resource_runner.exists() {
+            return Ok(legacy_resource_runner);
         }
     }
 
