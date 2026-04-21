@@ -13,6 +13,7 @@
     "lint:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "prepare-tauri-node-bundle": "node scripts/prepare-tauri-node-bundle.mjs",
     "bundle-runner": "cd runner && npm install && npm run build",
     "cargo-check": "cargo check --manifest-path src-tauri/Cargo.toml"
   },

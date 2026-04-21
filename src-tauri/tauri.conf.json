@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.playwright-test-studio.app",
   "build": {
-    "beforeDevCommand": "npm run bundle-runner && vite",
+    "beforeDevCommand": "npm run prepare-tauri-node-bundle && npm run bundle-runner && vite",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run bundle-runner && vite build",
+    "beforeBuildCommand": "npm run prepare-tauri-node-bundle && npm run bundle-runner && vite build",
     "frontendDist": "../dist"
   },
   "app": {
