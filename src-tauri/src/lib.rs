@@ -514,6 +514,42 @@ fn resolve_npx_cli_path(app: &AppHandle) -> Option<String> {
     None
 }
 
+fn resolve_playwright_cli_path(app: &AppHandle) -> Option<String> {
+    // Development path: runner workspace dependencies.
+    let dev_cli = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("runner")
+        .join("node_modules")
+        .join("playwright")
+        .join("cli.js");
+    if dev_cli.exists() {
+        return Some(dev_cli.to_string_lossy().to_string());
+    }
+
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        // Preferred production path: Resources/node_modules/playwright/cli.js
+        let bundled_cli = resource_dir
+            .join("node_modules")
+            .join("playwright")
+            .join("cli.js");
+        if bundled_cli.exists() {
+            return Some(bundled_cli.to_string_lossy().to_string());
+        }
+
+        // Backward-compatible fallback if node_modules was bundled under runner/.
+        let legacy_bundled_cli = resource_dir
+            .join("runner")
+            .join("node_modules")
+            .join("playwright")
+            .join("cli.js");
+        if legacy_bundled_cli.exists() {
+            return Some(legacy_bundled_cli.to_string_lossy().to_string());
+        }
+    }
+
+    None
+}
+
 fn check_node_runtime(node_binary: &str) -> Result<String, String> {
     let output = std::process::Command::new(node_binary)
         .arg("--version")
@@ -578,6 +614,7 @@ fn install_browser(app: AppHandle, browser: String) -> Result<(), String> {
 
     let node_binary = resolve_node_binary(&app);
     let npx_cli_path = resolve_npx_cli_path(&app);
+    let playwright_cli_path = resolve_playwright_cli_path(&app);
     let node_preflight = check_node_runtime(&node_binary);
     if let Err(e) = node_preflight {
         let _ = app.emit(
@@ -609,7 +646,13 @@ fn install_browser(app: AppHandle, browser: String) -> Result<(), String> {
             }),
         );
 
-        let mut command = if let Some(npx_cli) = npx_cli_path {
+        let mut command = if let Some(playwright_cli) = playwright_cli_path {
+            let mut cmd = std::process::Command::new(&node_binary);
+            cmd.arg(playwright_cli)
+                .arg("install")
+                .arg(&browser_name);
+            cmd
+        } else if let Some(npx_cli) = npx_cli_path {
             let mut cmd = std::process::Command::new(&node_binary);
             cmd.arg(npx_cli)
                 .arg("playwright")
@@ -623,6 +666,17 @@ fn install_browser(app: AppHandle, browser: String) -> Result<(), String> {
                 .arg(&browser_name);
             cmd
         };
+
+        let chosen_command = format!("{:?}", command);
+        let _ = app_handle.emit(
+            "browser-install-event",
+            serde_json::json!({
+                "type": "log",
+                "browser": &browser_name,
+                "message": format!("Install command: {}", chosen_command),
+                "timestamp": chrono::Utc::now().to_rfc3339(),
+            }),
+        );
 
         command
             .stdout(std::process::Stdio::piped())

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
+import { createRequire } from 'node:module';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -129,6 +130,7 @@ interface NetworkRequest {
 
 const RUNNER_BUILD_ID = 'runner-schema-v2-2026-04-21';
 const TOOL_SCHEMA_MODE = 'openai-compatible-jsonschema-normalization';
+const require = createRequire(import.meta.url);
 
 function findToolNameByKeyword(
   toolNames: string[],
@@ -174,7 +176,7 @@ function parseTestResult(text: string): {
 }
 
 function buildPlaywrightMcpArgs(config: RunnerConfig): string[] {
-  const args = ['@playwright/mcp@latest', '--no-sandbox'];
+  const args = ['--no-sandbox'];
   if (config.browser) {
     args.push('--browser', config.browser);
   }
@@ -184,20 +186,54 @@ function buildPlaywrightMcpArgs(config: RunnerConfig): string[] {
   return args;
 }
 
+function resolveLocalPlaywrightMcpCli(): string | null {
+  try {
+    const pkgJsonPath = require.resolve('@playwright/mcp/package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8')) as {
+      bin?: string | Record<string, string>;
+    };
+
+    const binField = pkg.bin;
+    const binRelativePath =
+      typeof binField === 'string'
+        ? binField
+        : binField?.['playwright-mcp'] ??
+          (binField ? Object.values(binField)[0] : undefined);
+
+    if (!binRelativePath) {
+      return null;
+    }
+
+    const cliPath = path.resolve(path.dirname(pkgJsonPath), binRelativePath);
+    return fs.existsSync(cliPath) ? cliPath : null;
+  } catch {
+    return null;
+  }
+}
+
 function buildMcpCommand(config: RunnerConfig): {
   command: string;
   args: string[];
 } {
   const mcpArgs = buildPlaywrightMcpArgs(config);
+  const localMcpCli = resolveLocalPlaywrightMcpCli();
+
+  if (localMcpCli) {
+    return {
+      command: config.nodeBinaryPath ?? 'node',
+      args: [localMcpCli, ...mcpArgs],
+    };
+  }
+
   if (config.nodeBinaryPath && config.npxCliPath) {
     return {
       command: config.nodeBinaryPath,
-      args: [config.npxCliPath, ...mcpArgs],
+      args: [config.npxCliPath, '@playwright/mcp@latest', ...mcpArgs],
     };
   }
   return {
     command: 'npx',
-    args: mcpArgs,
+    args: ['@playwright/mcp@latest', ...mcpArgs],
   };
 }
 
@@ -441,6 +477,10 @@ async function main() {
   try {
     addLog('info', 'Connecting to Playwright MCP server...');
     const mcpCommand = buildMcpCommand(config);
+    addLog(
+      'info',
+      `MCP launch command: ${mcpCommand.command} ${mcpCommand.args.join(' ')}`,
+    );
     transport = new StdioClientTransport({
       command: mcpCommand.command,
       args: mcpCommand.args,
