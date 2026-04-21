@@ -506,6 +506,30 @@ fn resolve_npx_cli_path(app: &AppHandle) -> Option<String> {
     None
 }
 
+fn check_node_runtime(node_binary: &str) -> Result<String, String> {
+    let output = std::process::Command::new(node_binary)
+        .arg("--version")
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output()
+        .map_err(|e| format!("Failed to execute node binary '{}': {}", node_binary, e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+
+    if output.status.success() {
+        if stdout.is_empty() {
+            return Ok("(version output empty)".to_string());
+        }
+        return Ok(stdout);
+    }
+
+    Err(format!(
+        "Node preflight failed for '{}': status={} stdout='{}' stderr='{}'",
+        node_binary, output.status, stdout, stderr
+    ))
+}
+
 #[tauri::command]
 fn get_installed_browsers() -> Vec<String> {
     let mut installed = vec![];
@@ -546,6 +570,22 @@ fn install_browser(app: AppHandle, browser: String) -> Result<(), String> {
 
     let node_binary = resolve_node_binary(&app);
     let npx_cli_path = resolve_npx_cli_path(&app);
+    let node_preflight = check_node_runtime(&node_binary);
+    if let Err(e) = node_preflight {
+        let _ = app.emit(
+            "browser-install-event",
+            serde_json::json!({
+                "type": "error",
+                "browser": &browser,
+                "message": format!(
+                    "Node runtime check failed before browser install. This is often a macOS code-signing/hardened-runtime issue for the bundled node binary. Details: {}",
+                    e
+                ),
+                "timestamp": chrono::Utc::now().to_rfc3339(),
+            }),
+        );
+        return Err(e);
+    }
     let browser_for_thread = browser.clone();
     let app_handle = app.clone();
 
@@ -703,6 +743,34 @@ fn run_test(
             "timestamp": chrono::Utc::now().to_rfc3339(),
         }),
     );
+
+    match check_node_runtime(&node_binary) {
+        Ok(version) => {
+            let _ = app.emit(
+                "run-event",
+                serde_json::json!({
+                    "type": "log",
+                    "level": "info",
+                    "message": format!("Node preflight OK: {}", version),
+                    "timestamp": chrono::Utc::now().to_rfc3339(),
+                }),
+            );
+        }
+        Err(e) => {
+            let _ = app.emit(
+                "run-event",
+                serde_json::json!({
+                    "type": "error",
+                    "message": format!(
+                        "Bundled Node runtime check failed before runner launch. This is often a macOS code-signing/hardened-runtime issue. Details: {}",
+                        e
+                    ),
+                    "timestamp": chrono::Utc::now().to_rfc3339(),
+                }),
+            );
+            return Err(e);
+        }
+    }
 
     let run_id = uuid::Uuid::new_v4().to_string();
     let run_dir = PathBuf::from(&app_data_dir)

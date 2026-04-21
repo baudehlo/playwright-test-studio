@@ -40,7 +40,7 @@
     ],
     "macOS": {
       "hardenedRuntime": true,
-      "entitlements": null
+      "entitlements": "entitlements.plist"
     }
   }
 }

@@ -105,6 +105,16 @@ jobs:
           cp -R "node-v${NODE_VERSION}-darwin-arm64/lib/node_modules/npm" "src-tauri/node-dist/npm"
           chmod +x "src-tauri/binaries/node-aarch64-apple-darwin"
           rm -rf "node-v${NODE_VERSION}-darwin-arm64"
+      - name: Prepare bundled Node signature (macOS)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          NODE_BIN="src-tauri/binaries/node-aarch64-apple-darwin"
+          xattr -cr "$NODE_BIN" || true
+          codesign --remove-signature "$NODE_BIN" || true
+          codesign --force --sign - --timestamp=none "$NODE_BIN"
+          codesign --verify --verbose "$NODE_BIN"
       - name: Download bundled Node.js (Linux x64)
         if: matrix.platform == 'ubuntu-22.04'
         shell: bash
