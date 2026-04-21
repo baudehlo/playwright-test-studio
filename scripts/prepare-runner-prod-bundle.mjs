@@ -25,6 +25,11 @@ function run(command, args, cwd) {
     stdio: 'inherit',
     env: process.env,
   });
+  if (result.error) {
+    throw new Error(
+      `${command} ${args.join(' ')} failed to start: ${result.error.message}`,
+    );
+  }
   if (result.status !== 0) {
     throw new Error(
       `${command} ${args.join(' ')} failed with status ${result.status}`,
@@ -44,7 +49,8 @@ function main() {
   fs.copyFileSync(runnerPackageJson, path.join(bundleDir, 'package.json'));
   fs.copyFileSync(runnerPackageLock, path.join(bundleDir, 'package-lock.json'));
 
-  run('npm', ['ci', '--omit=dev', '--ignore-scripts'], bundleDir);
+  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  run(npmCommand, ['ci', '--omit=dev', '--ignore-scripts'], bundleDir);
 
   fs.rmSync(path.join(bundleDir, 'package.json'), { force: true });
   fs.rmSync(path.join(bundleDir, 'package-lock.json'), { force: true });
