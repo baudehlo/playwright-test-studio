@@ -10,3 +10,6 @@
 /binaries/node-*
 /binaries/*.exe
 /node-dist/npm/
+
+# Generated production runner bundle for release packaging
+/runner-bundle/

@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "npm run prepare-tauri-node-bundle && npm run bundle-runner && vite",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run prepare-tauri-node-bundle && npm run bundle-runner-release && vite build",
+    "beforeBuildCommand": "npm run prepare-tauri-node-bundle && npm run bundle-runner && npm run prepare-runner-prod-bundle && vite build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -28,8 +28,8 @@
     "targets": "all",
     "externalBin": ["binaries/node"],
     "resources": {
-      "../runner/dist/runner.js": "runner/runner.js",
-      "../runner/node_modules": "runner/node_modules",
+      "runner-bundle/runner.js": "runner.js",
+      "runner-bundle/node_modules": "node_modules",
       "node-dist/npm": "node-dist/npm"
     },
     "icon": [
