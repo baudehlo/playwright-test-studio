@@ -1,7 +1,7 @@
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
-import { createHash } from 'node:crypto';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -190,7 +190,11 @@ function isTimeoutError(err: unknown): boolean {
   // Walk through nested cause chains when available.
   while (cursor && typeof cursor === 'object' && !seen.has(cursor)) {
     seen.add(cursor);
-    const obj = cursor as { message?: unknown; cause?: unknown; code?: unknown };
+    const obj = cursor as {
+      message?: unknown;
+      cause?: unknown;
+      code?: unknown;
+    };
     if (obj.message !== undefined) {
       messages.push(String(obj.message));
     }
@@ -297,11 +301,14 @@ function normalizeJsonSchemaNode(input: unknown): JsonSchemaNode {
 
   return {
     type: 'string',
-    description: typeof raw.description === 'string' ? raw.description : undefined,
+    description:
+      typeof raw.description === 'string' ? raw.description : undefined,
   };
 }
 
-function toOpenAiFunctionParametersSchema(inputSchema: unknown): JsonSchemaNode {
+function toOpenAiFunctionParametersSchema(
+  inputSchema: unknown,
+): JsonSchemaNode {
   const normalized = normalizeJsonSchemaNode(inputSchema);
   if (normalized.type === 'object') {
     return normalized;
@@ -532,7 +539,10 @@ async function main() {
 
               screenshotCount++;
               const screenshotFilename = `screenshot-${String(screenshotCount).padStart(3, '0')}-${Date.now()}.png`;
-              const screenshotPath = path.join(screenshotsDir, screenshotFilename);
+              const screenshotPath = path.join(
+                screenshotsDir,
+                screenshotFilename,
+              );
               fs.writeFileSync(screenshotPath, imageData);
               lastScreenshotHash = imageHash;
 
@@ -683,7 +693,9 @@ async function main() {
     const provider = createProvider(settings);
     const effectiveModel = settings.model.trim();
     if (!effectiveModel) {
-      throw new Error('Settings model is empty. Please set a model in Settings.');
+      throw new Error(
+        'Settings model is empty. Please set a model in Settings.',
+      );
     }
     const assistantTextChunks: string[] = [];
 
@@ -693,7 +705,7 @@ async function main() {
       `AI config: provider=${settings.aiProvider}, model=${effectiveModel}`,
     );
 
-  const systemPrompt = `You are a browser test automation agent. You have access to browser control tools via Playwright.
+    const systemPrompt = `You are a browser test automation agent. You have access to browser control tools via Playwright.
 Execute the test script step by step using the available browser tools.
 The script is written as human-readable descriptions of what appears on the page, not as CSS selectors or implementation details. Translate those visual descriptions into the appropriate tool usage.
 For JavaScript-heavy pages, wait for visible content to finish loading before interacting.
@@ -706,7 +718,7 @@ After completing all steps, output a brief summary and finish with exactly one o
 TEST_RESULT: PASS
 TEST_RESULT: FAIL - <reason>`;
 
-  const result = await generateText({
+    const result = await generateText({
       model: provider(effectiveModel),
       system: systemPrompt,
       prompt: fullScript,
@@ -831,7 +843,7 @@ TEST_RESULT: FAIL - <reason>`;
         );
         addLog('info', `Recovered Details URLs:\n${fallbackUrls.join('\n')}`);
       } else {
-      throw new Error(parsedResult.reason);
+        throw new Error(parsedResult.reason);
       }
     }
 
