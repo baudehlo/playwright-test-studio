@@ -136,9 +136,8 @@ export function Settings() {
   const [globalVarsDirty, setGlobalVarsDirty] = useState(false);
   const [globalVarsSaved, setGlobalVarsSaved] = useState(false);
   const [layoutReset, setLayoutReset] = useState(false);
-  const [installingBrowser, setInstallingBrowser] = useState<BrowserName | null>(
-    null,
-  );
+  const [installingBrowser, setInstallingBrowser] =
+    useState<BrowserName | null>(null);
   const [installLog, setInstallLog] = useState<string[]>([]);
   const installLogRef = useRef<HTMLDivElement>(null);
 
