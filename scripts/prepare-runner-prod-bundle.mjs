@@ -37,6 +37,22 @@ function run(command, args, cwd) {
   }
 }
 
+function resolveNpmInvocation() {
+  // On CI Windows runners, spawning npm.cmd can fail with EINVAL.
+  // Running npm through node + npm-cli.js is more reliable cross-platform.
+  if (process.env.npm_execpath) {
+    return {
+      command: process.execPath,
+      argsPrefix: [process.env.npm_execpath],
+    };
+  }
+
+  return {
+    command: process.platform === 'win32' ? 'npm.cmd' : 'npm',
+    argsPrefix: [],
+  };
+}
+
 function main() {
   mustExist(runnerDistFile, 'Runner build output');
   mustExist(runnerPackageJson, 'Runner package.json');
@@ -49,8 +65,12 @@ function main() {
   fs.copyFileSync(runnerPackageJson, path.join(bundleDir, 'package.json'));
   fs.copyFileSync(runnerPackageLock, path.join(bundleDir, 'package-lock.json'));
 
-  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  run(npmCommand, ['ci', '--omit=dev', '--ignore-scripts'], bundleDir);
+  const npmInvocation = resolveNpmInvocation();
+  run(
+    npmInvocation.command,
+    [...npmInvocation.argsPrefix, 'ci', '--omit=dev', '--ignore-scripts'],
+    bundleDir,
+  );
 
   fs.rmSync(path.join(bundleDir, 'package.json'), { force: true });
   fs.rmSync(path.join(bundleDir, 'package-lock.json'), { force: true });
