@@ -116,6 +116,7 @@ export function RunPanel() {
     readPersistedNumber(SCREENSHOTS_WIDTH_KEY, 256),
   );
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const logScrollRef = useRef<HTMLDivElement | null>(null);
 
   const testRuns = selectedTestId ? (runs[selectedTestId] ?? []) : [];
 
@@ -167,6 +168,12 @@ export function RunPanel() {
   const displayHttpFailures = showLiveBuffer
     ? currentRunHttpFailures
     : (selectedRun?.httpFailures ?? []);
+
+  useEffect(() => {
+    const el = logScrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [displayLog.length, displayHttpFailures.length, showLiveBuffer]);
 
   if (!selectedTestId) {
     return (
@@ -250,7 +257,10 @@ export function RunPanel() {
             <Clock className="w-3 h-3 text-slate-500" />
             <span className="text-xs font-medium text-slate-400">Log</span>
           </div>
-          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5 font-mono">
+          <div
+            ref={logScrollRef}
+            className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5 font-mono"
+          >
             {displayLog.length === 0 ? (
               <span className="text-xs text-slate-600">No log entries</span>
             ) : (
@@ -280,12 +290,14 @@ export function RunPanel() {
                 testId={selectedTestId}
                 runId={selectedRun.id}
                 screenshots={displayScreenshots}
+                autoFollowLatest={false}
               />
             ) : showLiveBuffer ? (
               <Screenshots
                 testId={selectedTestId}
                 runId={currentRunId ?? 'current'}
                 screenshots={displayScreenshots}
+                autoFollowLatest
               />
             ) : (
               <div className="flex items-center justify-center h-full text-slate-600 text-xs">

@@ -1,0 +1,800 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - link "Pedalheads Logo in white" [ref=e8] [cursor=pointer]:
+          - /url: /en
+          - img "Pedalheads Logo in white" [ref=e9]
+        - link "Find a program" [ref=e10] [cursor=pointer]:
+          - /url: /en/camp
+      - generic [ref=e11]:
+        - generic [ref=e13]:
+          - generic [ref=e14]:
+            - button "FR" [ref=e15] [cursor=pointer]
+            - generic [ref=e16]: /
+            - button "EN" [ref=e17] [cursor=pointer]
+            - img "globe icon" [ref=e18]
+          - link "Login" [ref=e19] [cursor=pointer]:
+            - /url: /en/account/login
+          - link "Login" [ref=e20] [cursor=pointer]:
+            - /url: /en/account/login
+            - img "Login" [ref=e21]
+          - link "Give $25, get $25" [ref=e23] [cursor=pointer]:
+            - /url: /en/refer
+            - img "Give $25, get $25" [ref=e24]
+        - generic [ref=e26]:
+          - button "Our programs" [ref=e27] [cursor=pointer]
+          - button "Locations" [ref=e28] [cursor=pointer]
+          - link "Key dates" [ref=e30] [cursor=pointer]:
+            - /url: /en/registration-dates
+          - button "About us" [ref=e31] [cursor=pointer]
+          - button "Jobs" [ref=e32] [cursor=pointer]
+          - button "Questions?" [ref=e33] [cursor=pointer]
+    - generic [ref=e35]:
+      - heading "Find a program today!" [level=1] [ref=e36]
+      - heading "Payment plans now available with sezzle logo" [level=3] [ref=e37]:
+        - text: Payment plans now available with
+        - img "sezzle logo" [ref=e38]
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - heading "Search by:" [level=2] [ref=e42]
+          - generic [ref=e43]:
+            - generic [ref=e45]: Filter
+            - generic [ref=e46]: My Location
+        - generic [ref=e47]:
+          - button "Show map" [ref=e502] [cursor=pointer]:
+            - img [ref=e503]
+            - text: Show map
+          - generic [ref=e48] [cursor=pointer]:
+            - img [ref=e49]
+            - text: Filters
+          - generic [ref=e51] [cursor=pointer]:
+            - img [ref=e52]
+            - text: Clear
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - text: Region
+          - generic [ref=e59] [cursor=pointer]: Ontario
+        - generic [ref=e60]:
+          - generic [ref=e61]:
+            - text: City
+            - img [ref=e63]
+          - generic [ref=e68] [cursor=pointer]: Toronto
+        - generic [ref=e69]:
+          - text: Program (optional)
+          - generic [ref=e73] [cursor=pointer]: Activities
+        - generic [ref=e74]:
+          - text: Seasons (optional)
+          - generic [ref=e78] [cursor=pointer]: Program seasons
+      - button "Search" [ref=e84] [cursor=pointer]
+    - generic [ref=e85]:
+      - generic [ref=e86]:
+        - heading "Upcoming Programs" [level=2] [ref=e87]
+        - paragraph [ref=e506]: 28 of 28 Results
+      - generic [ref=e507]:
+        - generic [ref=e508]:
+          - generic [ref=e509]:
+            - text: Activity
+            - generic [ref=e510] [cursor=pointer]: ↓
+          - generic [ref=e511]:
+            - text: Location
+            - generic [ref=e512] [cursor=pointer]: ↓
+        - generic [ref=e514]:
+          - generic [ref=e516]:
+            - generic [ref=e518]: Bike
+            - generic [ref=e520]:
+              - text: Bayview - St. Agnes Catholic School
+              - link "MapIcon" [ref=e521] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/1TPCrL3LihruLdWV6
+                - img "MapIcon" [ref=e522]
+            - generic [ref=e524] [cursor=pointer]: Schedules
+          - generic [ref=e526]:
+            - generic [ref=e528]: Bike
+            - generic [ref=e530]:
+              - text: Bloor West - James Culnan Catholic School
+              - link "MapIcon" [ref=e531] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/sSy14sEEQQMsMpJK8
+                - img "MapIcon" [ref=e532]
+            - generic [ref=e534] [cursor=pointer]: Schedules
+          - generic [ref=e536]:
+            - generic [ref=e538]: Bike
+            - generic [ref=e540]:
+              - text: Bloor West - Lithuania Park
+              - link "MapIcon" [ref=e541] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/RLpQHFQFfDy88Y4P7
+                - img "MapIcon" [ref=e542]
+            - generic [ref=e544] [cursor=pointer]: Schedules
+          - generic [ref=e546]:
+            - generic [ref=e548]: Bike
+            - generic [ref=e550]:
+              - text: Bloor West - St. James Catholic School
+              - link "MapIcon" [ref=e551] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/cThn8KKQETCzgaC47
+                - img "MapIcon" [ref=e552]
+            - generic [ref=e554] [cursor=pointer]: Schedules
+          - generic [ref=e556]:
+            - generic [ref=e558]:
+              - generic [ref=e559]: Bike
+              - generic [ref=e560]: Trail riding
+            - generic [ref=e562]:
+              - text: Don Mills - Donway Covenant United Church
+              - link "MapIcon" [ref=e563] [cursor=pointer]:
+                - /url: https://goo.gl/maps/KjSV36pV5Br6cvu29
+                - img "MapIcon" [ref=e564]
+            - generic [ref=e566] [cursor=pointer]: Schedules
+          - generic [ref=e568]:
+            - generic [ref=e570]: Bike
+            - generic [ref=e572]:
+              - text: Dovercourt - Bickford Park
+              - link "MapIcon" [ref=e573] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/ZF5Faj3eRGwV2ZM97
+                - img "MapIcon" [ref=e574]
+            - generic [ref=e576] [cursor=pointer]: Schedules
+          - generic [ref=e578]:
+            - generic [ref=e580]: Bike
+            - generic [ref=e582]:
+              - text: Dovercourt - St. Sebastian Catholic School
+              - link "MapIcon" [ref=e583] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/bBiiZcakUANqKah4A
+                - img "MapIcon" [ref=e584]
+            - generic [ref=e586] [cursor=pointer]: Schedules
+          - generic [ref=e588]:
+            - generic [ref=e590]: Bike
+            - generic [ref=e592]:
+              - text: East York - Canadian Martyrs Catholic School
+              - link "MapIcon" [ref=e593] [cursor=pointer]:
+                - /url: https://goo.gl/maps/tEhqj45mvo5KA6iB7
+                - img "MapIcon" [ref=e594]
+            - generic [ref=e596] [cursor=pointer]: Schedules
+          - generic [ref=e598]:
+            - generic [ref=e600]: Bike
+            - generic [ref=e602]:
+              - text: East York - Toronto City Church
+              - link "MapIcon" [ref=e603] [cursor=pointer]:
+                - /url: https://goo.gl/maps/JfmyqZuL5vRBy8ZN9
+                - img "MapIcon" [ref=e604]
+            - generic [ref=e606] [cursor=pointer]: Schedules
+          - generic [ref=e608]:
+            - generic [ref=e610]: Bike
+            - generic [ref=e612]:
+              - text: Etobicoke - Humber Valley United Church
+              - link "MapIcon" [ref=e613] [cursor=pointer]:
+                - /url: https://goo.gl/maps/dUstBj4uGmp8uNsM9
+                - img "MapIcon" [ref=e614]
+            - generic [ref=e616] [cursor=pointer]: Schedules
+          - generic [ref=e618]:
+            - generic [ref=e620]: Trail riding
+            - generic [ref=e622]:
+              - text: Etobicoke - James Gardens
+              - link "MapIcon" [ref=e623] [cursor=pointer]:
+                - /url: https://goo.gl/maps/MZ3XFAdjxcAKwWgt8
+                - img "MapIcon" [ref=e624]
+            - generic [ref=e626] [cursor=pointer]: Schedules
+          - generic [ref=e628]:
+            - generic [ref=e630]: Bike
+            - generic [ref=e632]:
+              - text: Etobicoke - Nativity of Our Lord Catholic School
+              - link "MapIcon" [ref=e633] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/8PsDnBPzWp2Dc5Uu6
+                - img "MapIcon" [ref=e634]
+            - generic [ref=e636] [cursor=pointer]: Schedules
+          - generic [ref=e638]:
+            - generic [ref=e640]: Bike
+            - generic [ref=e642]:
+              - text: Etobicoke - Queensway Baptist Church
+              - link "MapIcon" [ref=e643] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/DWFS2dr26aZhjP54A
+                - img "MapIcon" [ref=e644]
+            - generic [ref=e646] [cursor=pointer]: Schedules
+          - generic [ref=e648]:
+            - generic [ref=e650]: Bike
+            - generic [ref=e652]:
+              - text: Forest Hill - Forest Hill Jr. & Sr. Public School
+              - link "MapIcon" [ref=e653] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/44CXEvuvcBfwGt4g9
+                - img "MapIcon" [ref=e654]
+            - generic [ref=e656] [cursor=pointer]: Schedules
+          - generic [ref=e658]:
+            - generic [ref=e660]: Bike/Swim Combo
+            - generic [ref=e662]:
+              - text: Forest Hill - The Bishop Strachan School
+              - link "MapIcon" [ref=e663] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/h9XFU1Q1JHijsR817
+                - img "MapIcon" [ref=e664]
+            - generic [ref=e666] [cursor=pointer]: Schedules
+          - generic [ref=e668]:
+            - generic [ref=e670]: Swim
+            - generic [ref=e672]:
+              - text: Forest Hill - The Bishop Strachan School
+              - link "MapIcon" [ref=e673] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/h9XFU1Q1JHijsR817
+                - img "MapIcon" [ref=e674]
+            - generic [ref=e676] [cursor=pointer]: Schedules
+          - generic [ref=e678]:
+            - generic [ref=e680]: Bike
+            - generic [ref=e682]:
+              - text: Forest Hill - The Bishop Strachan School
+              - link "MapIcon" [ref=e683] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/h9XFU1Q1JHijsR817
+                - img "MapIcon" [ref=e684]
+            - generic [ref=e686] [cursor=pointer]: Schedules
+          - generic [ref=e688]:
+            - generic [ref=e690]: Swim
+            - generic [ref=e692]:
+              - text: Forest Hill North - Havergal College
+              - link "MapIcon" [ref=e693] [cursor=pointer]:
+                - /url: https://goo.gl/maps/u4Ry496bYdSFT3Pg9
+                - img "MapIcon" [ref=e694]
+            - generic [ref=e696] [cursor=pointer]: Schedules
+          - generic [ref=e698]:
+            - generic [ref=e700]: Bike
+            - generic [ref=e702]:
+              - text: Leaside - Leaside United Church
+              - link "MapIcon" [ref=e703] [cursor=pointer]:
+                - /url: https://goo.gl/maps/nC8qyhJkRwKxxaZZ7
+                - img "MapIcon" [ref=e704]
+            - generic [ref=e706] [cursor=pointer]: Schedules
+          - generic [ref=e708]:
+            - generic [ref=e710]: Trail riding
+            - generic [ref=e712]:
+              - text: Leaside - Serena Gundy Park
+              - link "MapIcon" [ref=e713] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/TMBSJYBPQkuLMbea7
+                - img "MapIcon" [ref=e714]
+            - generic [ref=e716] [cursor=pointer]: Schedules
+          - generic [ref=e718]:
+            - generic [ref=e720]: Bike
+            - generic [ref=e722]:
+              - text: Leaside - St. Anselm Catholic School
+              - link "MapIcon" [ref=e723] [cursor=pointer]:
+                - /url: https://goo.gl/maps/6xsQWD1YZSyqfjsg8
+                - img "MapIcon" [ref=e724]
+            - generic [ref=e726] [cursor=pointer]: Schedules
+          - generic [ref=e728]:
+            - generic [ref=e730]: Bike
+            - generic [ref=e732]:
+              - text: Leslieville - St. Joseph Catholic School
+              - link "MapIcon" [ref=e733] [cursor=pointer]:
+                - /url: https://goo.gl/maps/R2JJBy82irg9zKZK6
+                - img "MapIcon" [ref=e734]
+            - generic [ref=e736] [cursor=pointer]: Schedules
+          - generic [ref=e738]:
+            - generic [ref=e740]: Bike
+            - generic [ref=e742]:
+              - text: Little Italy - Pope Francis Catholic School
+              - link "MapIcon" [ref=e743] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/XReYsrmDzKsN7AmN9
+                - img "MapIcon" [ref=e744]
+            - generic [ref=e746] [cursor=pointer]: Schedules
+          - generic [ref=e748]:
+            - generic [ref=e750]: Bike
+            - generic [ref=e752]:
+              - text: North York - Adath Israel Congregation
+              - link "MapIcon" [ref=e753] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/gxfMdcRTCbkfbzsD9
+                - img "MapIcon" [ref=e754]
+            - generic [ref=e756] [cursor=pointer]: Schedules
+          - generic [ref=e758]:
+            - generic [ref=e760]:
+              - generic [ref=e761]: Bike
+              - generic [ref=e762]: Trail riding
+            - generic [ref=e764]:
+              - text: The Beaches - Birch Cliff Public School
+              - link "MapIcon" [ref=e765] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/zgUfmQund9tkR6tV7
+                - img "MapIcon" [ref=e766]
+            - generic [ref=e768] [cursor=pointer]: Schedules
+          - generic [ref=e770]:
+            - generic [ref=e772]: Bike
+            - generic [ref=e774]:
+              - text: The Beaches - Birchmount Park
+              - link "MapIcon" [ref=e775] [cursor=pointer]:
+                - /url: https://www.google.com/maps/place/Birchmount+Park/@43.6966041,-79.2617569,17z/data=!3m1!4b1!4m5!3m4!1s0x89d4cef1bd6f08f3:0x6b1c88a6ce628ddb!8m2!3d43.6966002!4d-79.2595629
+                - img "MapIcon" [ref=e776]
+            - generic [ref=e778] [cursor=pointer]: Schedules
+          - generic [ref=e780]:
+            - generic [ref=e782]: Bike
+            - generic [ref=e784]:
+              - text: The Beaches - Bowmore Road Jr & Sr Public Sch
+              - link "MapIcon" [ref=e785] [cursor=pointer]:
+                - /url: https://maps.app.goo.gl/HzNapTppTYyBbgPU8
+                - img "MapIcon" [ref=e786]
+            - generic [ref=e788] [cursor=pointer]: Schedules
+          - generic [ref=e790]:
+            - generic [ref=e792]:
+              - generic [ref=e793]: Bike
+              - generic [ref=e794]: Trail riding
+            - generic [ref=e796]:
+              - text: The Beaches - Immaculate Heart of Mary Cath School
+              - link "MapIcon" [ref=e797] [cursor=pointer]:
+                - /url: https://goo.gl/maps/hbz1t4b8PmwARGrZ6
+                - img "MapIcon" [ref=e798]
+            - generic [ref=e800] [cursor=pointer]: Schedules
+      - generic [ref=e92]:
+        - heading "Frequently asked questions" [level=2] [ref=e93]
+        - generic [ref=e94]:
+          - generic [ref=e96] [cursor=pointer]:
+            - heading "Bike and Trail riding Camp" [level=3] [ref=e97]
+            - generic [ref=e98]: +
+          - list:
+            - listitem [ref=e99]:
+              - paragraph [ref=e101] [cursor=pointer]: What does a day at bike camp look like?
+              - generic:
+                - list [ref=e102]:
+                  - listitem [ref=e103]:
+                    - heading "Check in" [level=4] [ref=e104]
+                    - paragraph [ref=e105]: Come say hi! Meet our team and check your kid into camp on day one.
+                  - listitem [ref=e106]:
+                    - heading "Meet the instructor" [level=4] [ref=e107]
+                    - paragraph [ref=e108]: Your kid will be assigned to a numbered traffic cone where they'll meet their instructor and complete a bike safety check.
+                  - listitem [ref=e109]:
+                    - heading "Play a warmup game" [level=4] [ref=e110]
+                    - paragraph [ref=e111]: Let's get going! The kids (and us big kids) play a camp-wide Get Going Game to get them warmed up and ready for camp.
+                  - listitem [ref=e112]:
+                    - heading "Camp starts!" [level=4] [ref=e113]
+                    - paragraph [ref=e114]: Kids return to their class and begin to progress through the Pedalheads curriculum.
+                - paragraph [ref=e115]:
+                  - text: We'll make sure your kid is fueled and recharged throughout the day with regular snack breaks, water breaks, shade breaks and bathroom breaks.
+                  - text: Is your camper with us all day? All day campers get an hour-long lunch break, too.
+        - generic [ref=e116]:
+          - generic [ref=e118] [cursor=pointer]:
+            - heading "Swim Lessons" [level=3] [ref=e119]
+            - generic [ref=e120]: +
+          - list:
+            - listitem [ref=e121]:
+              - paragraph [ref=e123] [cursor=pointer]: How much do your swim lessons cost?
+              - generic:
+                - paragraph [ref=e124]: It depends on the level, duration and location.
+                - paragraph [ref=e125]:
+                  - text: To find out how much your preferred program costs, select ‘
+                  - link "Find a program" [ref=e126] [cursor=pointer]:
+                    - /url: /camp
+                  - text: ’ and then select ‘See levels’ the price will be listed there.
+            - listitem [ref=e127]:
+              - paragraph [ref=e129] [cursor=pointer]: What happens if my kid misses a swim lesson?
+              - generic:
+                - paragraph [ref=e130]: We understand that sometimes life gets busy! To help families stay on track, we’re happy to offer two (2) make-up lessons per lesson set for any reason—no questions asked.
+                - paragraph [ref=e131]:
+                  - link "Learn more." [ref=e132] [cursor=pointer]:
+                    - /url: https://pedalheads.kb.help/make-up-lesson-policy-swim/
+            - listitem [ref=e133]:
+              - paragraph [ref=e135] [cursor=pointer]: How do I register my child?
+              - paragraph [ref=e136]: Coming soon.
+            - listitem [ref=e137]:
+              - paragraph [ref=e139] [cursor=pointer]: What level should my kid be in?
+              - paragraph [ref=e140]:
+                - text: Good question! Take a look at our
+                - link "swim levels." [ref=e141] [cursor=pointer]:
+                  - /url: /swim#levels
+            - listitem [ref=e142]:
+              - paragraph [ref=e144] [cursor=pointer]: What should my kid bring to swimming lessons?
+              - generic:
+                - paragraph [ref=e145]: Here's what to pack in your swim bag to make sure your kid is ready to splash with us.
+                - list [ref=e146]:
+                  - listitem [ref=e147]: Bathing suit
+                  - listitem [ref=e148]: Towel
+                  - listitem [ref=e149]: Indoor footwear
+                  - listitem [ref=e150]: Swim diaper for parent and tots class
+                  - listitem [ref=e151]: Goggles (optional)
+                  - listitem [ref=e152]: Swim cap (optional depending on pool)
+            - listitem [ref=e153]:
+              - paragraph [ref=e155] [cursor=pointer]: Can I switch the location/date/time/level of the swim lessons I've booked?
+              - generic:
+                - paragraph [ref=e156]: You can switch the date/time two weeks before the start date of your current registration, pending availability.
+                - paragraph [ref=e157]: Unfortunately, no changes can be made to your current registration less than two weeks before your start date.
+        - generic [ref=e158]:
+          - generic [ref=e160] [cursor=pointer]:
+            - heading "Registration" [level=3] [ref=e161]
+            - generic [ref=e162]: +
+          - list:
+            - listitem [ref=e163]:
+              - paragraph [ref=e165] [cursor=pointer]: How do I register my child?
+              - paragraph [ref=e166]:
+                - text: Ready to register? This short video with guide you through the process of searching, exploring, and registering for Pedalheads programs
+                - link "watch now" [ref=e167] [cursor=pointer]:
+                  - /url: https://youtu.be/LKLFNoDyO-A?si=AaMCw331Ieqv5EA9
+            - listitem [ref=e168]:
+              - paragraph [ref=e170] [cursor=pointer]: How do I get on the notification list?
+              - list [ref=e171]:
+                - listitem [ref=e172]:
+                  - link "Search for your program here" [ref=e173] [cursor=pointer]:
+                    - /url: /camp
+                - listitem [ref=e174]: If the program is available, there will be an option to ‘Add to cart’, otherwise select ‘Join notification list’
+                - listitem [ref=e175]: Follow the prompts to sign up for the notification list
+                - listitem [ref=e176]: We'll contact you if a spot becomes available 🤞
+            - listitem [ref=e177]:
+              - paragraph [ref=e179] [cursor=pointer]: What's the difference between Pedalheads Bike and Trail riding?
+              - generic:
+                - paragraph [ref=e180]:
+                  - link "Bike camps" [ref=e181] [cursor=pointer]:
+                    - /url: /bike
+                  - text: take place on location at the Pedalheads camp. Our road riders will also hit paved roads and bike paths around the neighborhood.
+                - paragraph [ref=e182]:
+                  - link "Trail riding camps" [ref=e183] [cursor=pointer]:
+                    - /url: /trail
+                  - text: skip the road, get off the beaten track and onto local trails, which can include gravel paths, pump tracks and even small features in more advanced levels.
+            - listitem [ref=e184]:
+              - paragraph [ref=e186] [cursor=pointer]: What camps are available in my area?
+              - paragraph [ref=e187]:
+                - text: Let's find out!
+                - link "Find a program" [ref=e188] [cursor=pointer]:
+                  - /url: /camp
+                - text: near you today.
+            - listitem [ref=e189]:
+              - paragraph [ref=e191] [cursor=pointer]: How much do your bike and trail camps cost?
+              - generic:
+                - paragraph [ref=e192]: It depends on the level, duration and location.
+                - paragraph [ref=e193]:
+                  - text: To find out how much your preferred program costs,
+                  - link "search for your program here" [ref=e194] [cursor=pointer]:
+                    - /url: /camp
+                  - text: then select ‘See levels’; the price will be listed on this page.
+            - listitem [ref=e195]:
+              - paragraph [ref=e197] [cursor=pointer]: Why do you have age requirements?
+              - paragraph [ref=e198]: Some age requirements are based on local childcare laws while others are based on the idea that kids will get the most from a class if they are learning with other kids close to their age.
+            - listitem [ref=e199]:
+              - paragraph [ref=e201] [cursor=pointer]: What level should my kid be in?
+              - generic:
+                - paragraph [ref=e202]:
+                  - text: Good question! Take a look at our
+                  - link "bike levels" [ref=e203] [cursor=pointer]:
+                    - /url: /bike#levels
+                  - text: and
+                  - link "trail levels" [ref=e204] [cursor=pointer]:
+                    - /url: /trail#levels
+                  - text: .
+                - paragraph [ref=e205]: Still unsure? You can take our bike camps level finder to find the level that's right for you.
+            - listitem [ref=e206]:
+              - paragraph [ref=e208] [cursor=pointer]: What should my kid bring to bike camp?
+              - generic [ref=e209]:
+                - paragraph [ref=e210]: "Here's what to pack to make sure your young rider is ready to roll:"
+                - list [ref=e211]:
+                  - listitem [ref=e212]: Bicycle
+                  - listitem [ref=e213]:
+                    - link "Properly fitted bike helmet" [ref=e214] [cursor=pointer]:
+                      - /url: https://youtu.be/0mpz1cj2caE?si=lrTQQdNJ1Hk33era
+                  - listitem [ref=e215]: Water bottle and snack*
+                  - listitem [ref=e216]: Mosquito repellent, rain gear, and/or sunscreen (weather dependent)
+                  - listitem [ref=e217]: Small backpack to hold all belongings
+                  - listitem [ref=e218]: Weather appropriate clothes
+                  - listitem [ref=e219]: Closed toe shoes like running or athletic shoes
+                  - listitem [ref=e220]: Any required medication, such as an EpiPen
+                - paragraph [ref=e221]: All day campers need to bring sunscreen, lunch, extra snacks, and a change of clothes.
+                - paragraph [ref=e222]: "*we are a nut-aware camp so please avoid bringing nuts if possible"
+            - listitem [ref=e223]:
+              - paragraph [ref=e225] [cursor=pointer]: What should my kid bring to trail riding camp?
+              - generic:
+                - paragraph [ref=e226]: "Here's what to pack to make sure your young trailblazer is ready to ride:"
+                - list [ref=e227]:
+                  - listitem [ref=e228]:
+                    - text: A bike that's ready to ride!
+                    - list [ref=e229]:
+                      - listitem [ref=e230]: At least 14”
+                      - listitem [ref=e231]: Training wheels-free
+                      - listitem [ref=e232]: Front and back hand brakes, and gears
+                  - listitem [ref=e233]:
+                    - link "Properly fitted bike helmet" [ref=e234] [cursor=pointer]:
+                      - /url: https://youtu.be/0mpz1cj2caE?si=lrTQQdNJ1Hk33era
+                  - listitem [ref=e235]:
+                    - text: Small backpack that your kid can ride with
+                    - list [ref=e236]:
+                      - listitem [ref=e237]: No cross bags
+                  - listitem [ref=e238]: Water bottle or hydration pack and snack*
+                  - listitem [ref=e239]: Weather appropriate clothes
+                  - listitem [ref=e240]:
+                    - text: Closed toe shoes like running or athletic shoes
+                    - list [ref=e241]:
+                      - listitem [ref=e242]: no rain boots or closed toed sandals
+                  - listitem [ref=e243]: Mosquito repellent, rain gear, and/or sunscreen (weather dependent)
+                  - listitem [ref=e244]: Any required medication, such as an EpiPen
+                - paragraph [ref=e245]: All day campers also need to bring sunscreen, lunch, extra snacks, and a change of clothes
+                - paragraph [ref=e246]: "*we are a nut-aware camp so please avoid bringing nuts if possible"
+            - listitem [ref=e247]:
+              - paragraph [ref=e249] [cursor=pointer]: Can you guarantee that my child will not need training wheels?
+              - generic:
+                - paragraph [ref=e250]: We find that most kids can ride independently by the end of our signature learn-to-ride camp.
+                - paragraph [ref=e251]: We use our Training Wheels Checklist and supporting obstacle course to assess when your child is ready to take them off and gently encourage and motivate them to give it a try.
+                - paragraph [ref=e252]: Still, every child is unique, so taking the training wheels off will happen when they're ready.
+            - listitem [ref=e253]:
+              - paragraph [ref=e255] [cursor=pointer]: Can I switch the location/date/time/level of the camp I've booked?
+              - generic:
+                - paragraph [ref=e256]:
+                  - text: You can switch the
+                  - strong [ref=e257]: date/time
+                  - text: no later than two weeks before the start date of your current registration, pending availability.
+                - paragraph [ref=e258]: Unfortunately, no changes can be made to your current registration less than two weeks before your start date.
+        - generic [ref=e259]:
+          - generic [ref=e261] [cursor=pointer]:
+            - heading "Child safety" [level=3] [ref=e262]
+            - generic [ref=e263]: +
+          - list:
+            - listitem [ref=e264]:
+              - paragraph [ref=e266] [cursor=pointer]: How do you protect my kid against bullying and harassment at camp?
+              - generic:
+                - paragraph [ref=e267]: We have a zero-tolerance policy for bullying or discrimination of any kind. Speak to our camp manager and we'll ensure the incident is followed up and resolved promptly.
+                - paragraph [ref=e268]:
+                  - text: See our
+                  - link "child protection policy" [ref=e269] [cursor=pointer]:
+                    - /url: https://pedalheads.kb.help/child-protection-policy/
+                  - text: here.
+            - listitem [ref=e270]:
+              - paragraph [ref=e272] [cursor=pointer]: What is your policy with sunscreen application?
+              - generic:
+                - paragraph [ref=e273]: Be sun safe! Make sure your kid has applied sunscreen before camp regardless of the weather. Our all day campers will re-apply during their lunch break so be sure to pack it in your kid's bag.
+                - paragraph [ref=e274]: Need more sun protection? W're here to help! Pack sunscreen in your kid's bag and ask the instructor to reapply it throughout the day.
+            - listitem [ref=e275]:
+              - paragraph [ref=e277] [cursor=pointer]: How does air quality affect Pedalheads' summer camps?
+              - generic:
+                - paragraph [ref=e278]:
+                  - text: Camps run as scheduled whenever possible, however, safety always comes first. We make decisions based on what's best for our campers and team based on the recommended guidelines from
+                  - link "Canadian" [ref=e279] [cursor=pointer]:
+                    - /url: https://weather.gc.ca/airquality/pages/index_e.html
+                  - text: and
+                  - link "American" [ref=e280] [cursor=pointer]:
+                    - /url: https://www.airnow.gov/
+                  - text: health agencies.
+                - paragraph [ref=e281]:
+                  - text: See more information on our
+                  - link "air quality policy here" [ref=e282] [cursor=pointer]:
+                    - /url: https://pedalheads.kb.help/air-quality-policy/
+                  - text: .
+            - listitem [ref=e283]:
+              - paragraph [ref=e285] [cursor=pointer]: Do you still run your camps when the weather's bad?
+              - generic:
+                - paragraph [ref=e286]: Our camps and lessons run rain or shine so come prepared with weather appropriate clothing and related gear.
+                - paragraph [ref=e287]:
+                  - text: Still, your kid's safety is our priority. The programs may hold off on certain activities until conditions improve, and if the weather is potentially hazardous, the program may be cancelled after careful consideration. Learn more about our
+                  - link "weather policy here" [ref=e288] [cursor=pointer]:
+                    - /url: https://pedalheads.kb.help/weather-policy/
+                  - text: .
+            - listitem [ref=e289]:
+              - paragraph [ref=e291] [cursor=pointer]: Do you conduct background checks on your instructors?
+              - generic:
+                - paragraph [ref=e292]: Yes! Our instructors undergo thorough background checks prior to joining our team and are well trained in skill development, safety, class management and program delivery.
+                - paragraph [ref=e293]: Our swim team are also certified by the Lifesaving Society and in CPR-C.
+                - paragraph [ref=e294]:
+                  - text: See our
+                  - link "child protection policy" [ref=e295] [cursor=pointer]:
+                    - /url: https://pedalheads.kb.help/child-protection-policy/
+                  - text: here.
+        - generic [ref=e296]:
+          - generic [ref=e298] [cursor=pointer]:
+            - heading "Inclusivity at camp" [level=3] [ref=e299]
+            - generic [ref=e300]: +
+          - list:
+            - listitem [ref=e301]:
+              - paragraph [ref=e303] [cursor=pointer]: Are your camps inclusive?
+              - generic:
+                - paragraph [ref=e304]: Joyful activity is for everyone! Our classes have small ratios of students to instructors and we offer private lessons for those who want one-on-one attention. However, while our instructors are well trained in skill development, safety, class management, and program delivery, they are not specifically trained to support children that require additional assistance.
+                - paragraph [ref=e305]: To ensure the best Pedalheads experience, some children may require extra support to participate. In this case, you will need to send an aide or other trained adult to accompany your child at camp. We respect your ability to assess your child's requirements and ask that you give us as much information as possible at the time of registration to better help us in supporting them so they can learn and thrive.
+                - paragraph [ref=e306]:
+                  - link "See our guide" [ref=e307] [cursor=pointer]:
+                    - /url: https://pedalheads.kb.help/camps-for-children-with-special-needs/
+                  - text: as to whether your child requires an aide at camp.
+        - generic [ref=e308]:
+          - generic [ref=e310] [cursor=pointer]:
+            - heading "Returns" [level=3] [ref=e311]
+            - generic [ref=e312]: +
+          - list:
+            - listitem [ref=e313]:
+              - paragraph [ref=e315] [cursor=pointer]: What is your cancellation policy for your programs?
+              - generic [ref=e316]:
+                - paragraph [ref=e317]: Full credits and refunds are available two weeks before the camp/lesson start date, however, refunds are subject to a $50 cancellation/administration fee per registration.
+                - heading "Refund example:" [level=4] [ref=e318]:
+                  - strong [ref=e319]: "Refund example:"
+                - paragraph [ref=e320]:
+                  - strong [ref=e321]: "Example:"
+                  - text: there is a $50 administrative fee per registration (meaning per child, and per week) for refunds. For example, if you have two children registered in the same week, this counts as two registrations (2 x $50), or if you have one child registered for two weeks, you also have two registrations (2 x $50).
+            - listitem [ref=e322]:
+              - paragraph [ref=e324] [cursor=pointer]: How long do I have to use my Pedalheads credit?
+              - generic:
+                - paragraph [ref=e325]: Your credit can be used up to two years from when it was issued.
+                - paragraph [ref=e326]: Please note that credits cannot be converted to refunds.
+            - listitem [ref=e327]:
+              - paragraph [ref=e329] [cursor=pointer]: What happens if Pedalheads cancelled the program I booked?
+              - paragraph [ref=e330]: You will receive a credit or full refund to the original form of payment.
+        - generic [ref=e331]:
+          - generic [ref=e333] [cursor=pointer]:
+            - heading "Soccer" [level=3] [ref=e334]
+            - generic [ref=e335]: +
+          - list:
+            - listitem [ref=e336]:
+              - paragraph [ref=e338] [cursor=pointer]: What is Pedalheads Soccer?
+              - paragraph [ref=e339]: Pedalheads Soccer is a foundational soccer skills program for kids ages 2-8, using energetic storytelling and interactive games to teach fundamental skills. Our approach ensures maximum time with the ball and quick, efficient learning.
+            - listitem [ref=e340]:
+              - paragraph [ref=e342] [cursor=pointer]: What level should my kid be in?
+              - paragraph [ref=e343]: Pedalheads Soccer is structured around age-appropriate learning. Simply choose the program for your child’s age and we’ll personalize their experience with one-on-one skill development to maximize their progress towards becoming a future soccer star!
+            - listitem [ref=e344]:
+              - paragraph [ref=e346] [cursor=pointer]: Do you offer programs for neuro-diverse children?
+              - paragraph [ref=e347]: We are big believers in making sport inclusive to everyone. Pedalheads Soccer Adapted is specially designed for children on the autism spectrum to develop their cognitive and motor skills through individualized, small group and team games. Should your soccer star require 1:1 support, we kindly ask that a parent or behaviour interventionist participates alongside them.
+            - listitem [ref=e348]:
+              - paragraph [ref=e350] [cursor=pointer]: When can I register for Pedalheads Soccer?
+              - paragraph [ref=e351]:
+                - text: We have camps and lessons that operate throughout the year.
+                - link "Register today at the closest field near you." [ref=e352] [cursor=pointer]:
+                  - /url: /camp
+            - listitem [ref=e353]:
+              - paragraph [ref=e355] [cursor=pointer]: How to register for Pedalheads Soccer?
+              - paragraph [ref=e356]:
+                - text: Like all Pedalheads programs, you can register directly on our
+                - link "website" [ref=e357] [cursor=pointer]:
+                  - /url: /camp
+                - text: or give us a call at
+                - link "1.888.886.6464." [ref=e358] [cursor=pointer]:
+                  - /url: tel:+1888886464
+            - listitem [ref=e359]:
+              - paragraph [ref=e361] [cursor=pointer]: What happens if Pedalheads cancelled the program I booked?
+              - paragraph [ref=e362]: You will receive a credit or full refund to the original form of payment.
+            - listitem [ref=e363]:
+              - paragraph [ref=e365] [cursor=pointer]: What is the Vancouver Rangers Football Club?
+              - generic:
+                - paragraph [ref=e366]:
+                  - link "Vancouver Rangers FC" [ref=e367] [cursor=pointer]:
+                    - /url: https://www.vancouverrangers.ca/
+                  - text: is a non-profit soccer academy in Vancouver, BC, designed for kids ready to advance from Pedalheads Soccer or transition from other soccer programs. As part of the Pedalheads family, VRFC provides an exciting next step for young players to continue growing and refining their soccer skills in a supportive environment.
+                - paragraph [ref=e368]: How is Vancouver Rangers associated with Pedalheads Soccer? As a progression from Pedalheads Soccer, Vancouver Rangers FC provides a welcoming, safe, and engaging environment where players can develop both their soccer skills and personal growth as young leaders.
+                - paragraph [ref=e369]: How is Vancouver Rangers FC different from other soccer clubs? At Vancouver Rangers FC, we take a holistic approach, focusing on both technical skill development and character growth to create well-rounded players. Our method emphasizes fundamental skills, a positive environment, age-appropriate training, and game understanding, all led by professional coaches to foster growth and long-term success in each player.
+            - listitem [ref=e370]:
+              - paragraph [ref=e372] [cursor=pointer]: How do I sign my child up for Vancouver Rangers?
+              - paragraph [ref=e373]:
+                - text: Visit
+                - link "Vancouver Rangers FC | Youth Soccer Academy | British Columbia" [ref=e374] [cursor=pointer]:
+                  - /url: https://www.vancouverrangers.ca/
+                - text: directly to sign up for Vancouver Rangers.
+        - generic [ref=e375]:
+          - generic [ref=e377] [cursor=pointer]:
+            - heading "Other FAQs" [level=3] [ref=e378]
+            - generic [ref=e379]: +
+          - list:
+            - listitem [ref=e380]:
+              - paragraph [ref=e381]:
+                - link "Explore our knowledge base" [ref=e382] [cursor=pointer]:
+                  - /url: https://pedalheads.kb.help/
+                - text: to find answers to the most frequently asked questions.
+    - generic [ref=e386]:
+      - img "Kid learning to bike with Pedalheads" [ref=e388]
+      - img "Swimming lessons in Pedalheads pool" [ref=e390]
+      - img "Kid with instructors at Pedalheads bike camp" [ref=e392]
+  - contentinfo [ref=e393]:
+    - img "Pedalheads Logo in blue" [ref=e395]
+    - generic [ref=e396]:
+      - list [ref=e398]:
+        - listitem [ref=e399]:
+          - link "Find a program" [ref=e400] [cursor=pointer]:
+            - /url: /en/camp
+        - listitem [ref=e401]:
+          - link "Call us 1-888-886-6464" [ref=e402] [cursor=pointer]:
+            - /url: tel:+18888866464
+        - listitem [ref=e403]:
+          - button "Sign up for updates" [ref=e404] [cursor=pointer]
+        - listitem [ref=e405]:
+          - strong [ref=e406]:
+            - link "中文" [ref=e407] [cursor=pointer]:
+              - /url: /en/chinese
+        - listitem [ref=e408]:
+          - link "facebook-icon" [ref=e409] [cursor=pointer]:
+            - /url: https://www.facebook.com/pedalheads
+            - img "facebook-icon" [ref=e410]
+          - link "instragram-icon" [ref=e411] [cursor=pointer]:
+            - /url: https://www.instagram.com/pedalheads
+            - img "instragram-icon" [ref=e412]
+          - link "youtube-icon" [ref=e413] [cursor=pointer]:
+            - /url: https://www.youtube.com/pedalheads
+            - img "youtube-icon" [ref=e414]
+      - generic [ref=e415]:
+        - paragraph [ref=e416]: Our programs
+        - list [ref=e417]:
+          - listitem [ref=e418]:
+            - link "Bike camps" [ref=e419] [cursor=pointer]:
+              - /url: /en/bike
+          - listitem [ref=e420]:
+            - link "Swimming lessons" [ref=e421] [cursor=pointer]:
+              - /url: /en/swim
+          - listitem [ref=e422]:
+            - link "Trail riding" [ref=e423] [cursor=pointer]:
+              - /url: /en/trail
+          - listitem [ref=e424]:
+            - link "Soccer" [ref=e425] [cursor=pointer]:
+              - /url: /en/soccer
+      - generic [ref=e426]:
+        - paragraph [ref=e427]: Locations
+        - generic [ref=e428]:
+          - generic [ref=e429]:
+            - paragraph [ref=e430]: United States
+            - list [ref=e431]:
+              - listitem [ref=e432]:
+                - link "California" [ref=e433] [cursor=pointer]:
+                  - /url: /en/california
+              - listitem [ref=e434]:
+                - link "Colorado" [ref=e435] [cursor=pointer]:
+                  - /url: /en/colorado
+              - listitem [ref=e436]:
+                - link "DMV" [ref=e437] [cursor=pointer]:
+                  - /url: /en/dc-maryland-virginia
+              - listitem [ref=e438]:
+                - link "Illinois" [ref=e439] [cursor=pointer]:
+                  - /url: /en/illinois
+              - listitem [ref=e440]:
+                - link "Oregon" [ref=e441] [cursor=pointer]:
+                  - /url: /en/oregon
+              - listitem [ref=e442]:
+                - link "Massachusetts" [ref=e443] [cursor=pointer]:
+                  - /url: /en/massachusetts
+              - listitem [ref=e444]:
+                - link "Minnesota" [ref=e445] [cursor=pointer]:
+                  - /url: /en/minnesota
+              - listitem [ref=e446]:
+                - link "Washington" [ref=e447] [cursor=pointer]:
+                  - /url: /en/washington
+          - generic [ref=e448]:
+            - paragraph [ref=e449]: Canada
+            - list [ref=e450]:
+              - listitem [ref=e451]:
+                - link "Alberta" [ref=e452] [cursor=pointer]:
+                  - /url: /en/alberta
+              - listitem [ref=e453]:
+                - link "British Columbia" [ref=e454] [cursor=pointer]:
+                  - /url: /en/british-columbia
+              - listitem [ref=e455]:
+                - link "Manitoba" [ref=e456] [cursor=pointer]:
+                  - /url: /en/manitoba
+              - listitem [ref=e457]:
+                - link "Ontario" [ref=e458] [cursor=pointer]:
+                  - /url: /en/ontario
+              - listitem [ref=e459]:
+                - link "Quebec" [ref=e460] [cursor=pointer]:
+                  - /url: /en/quebec
+      - generic [ref=e461]:
+        - paragraph [ref=e462]: About us
+        - list [ref=e463]:
+          - listitem [ref=e464]:
+            - link "About us" [ref=e465] [cursor=pointer]:
+              - /url: /en/about-us
+          - listitem [ref=e466]:
+            - link "Mission, vision & values" [ref=e467] [cursor=pointer]:
+              - /url: /en/about-us/mission-vision-values
+          - listitem [ref=e468]:
+            - link "Community" [ref=e469] [cursor=pointer]:
+              - /url: /en/community
+          - listitem [ref=e470]:
+            - link "Blog" [ref=e471] [cursor=pointer]:
+              - /url: /en/blog
+        - paragraph [ref=e472]: Jobs
+        - list [ref=e473]:
+          - listitem [ref=e474]:
+            - link "Join the team" [ref=e475] [cursor=pointer]:
+              - /url: /en/join-the-team
+          - listitem [ref=e476]:
+            - link "Summer camps & seasonal jobs" [ref=e477] [cursor=pointer]:
+              - /url: /en/join-the-team/summer-camp-and-seasonal-jobs
+          - listitem [ref=e478]:
+            - link "Swim instructor jobs" [ref=e479] [cursor=pointer]:
+              - /url: /en/join-the-team/swim-instructor-jobs
+          - listitem [ref=e480]:
+            - link "Careers" [ref=e481] [cursor=pointer]:
+              - /url: /en/join-the-team/careers
+      - generic [ref=e482]:
+        - paragraph [ref=e483]: Questions?
+        - list [ref=e484]:
+          - listitem [ref=e485]:
+            - link "Knowledge base/FAQ" [ref=e486] [cursor=pointer]:
+              - /url: https://pedalheads.kb.help/
+          - listitem [ref=e487]:
+            - link "Contact us" [ref=e488] [cursor=pointer]:
+              - /url: /en/contact-us
+          - listitem [ref=e489]:
+            - link "Policies" [ref=e490] [cursor=pointer]:
+              - /url: /en/policies
+        - paragraph [ref=e491]: My account
+        - list [ref=e492]:
+          - listitem [ref=e493]:
+            - link "My account" [ref=e494] [cursor=pointer]:
+              - /url: /en/account
+          - listitem [ref=e495]:
+            - link "Refer a friend" [ref=e496] [cursor=pointer]:
+              - /url: /en/refer
+          - listitem [ref=e497]:
+            - link "Login" [ref=e498] [cursor=pointer]:
+              - /url: /en/account/login
+  - alert [ref=e499]

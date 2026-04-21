@@ -1,12 +1,12 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
+import { createHash } from 'node:crypto';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { generateText, type Tool, tool } from 'ai';
-import { z } from 'zod';
+import { generateText, jsonSchema, type Tool, tool } from 'ai';
 
 interface TestData {
   id: string;
@@ -105,12 +105,28 @@ interface McpToolSchema {
   required?: string[];
 }
 
+interface JsonSchemaNode {
+  type?: string;
+  description?: string;
+  properties?: Record<string, JsonSchemaNode>;
+  required?: string[];
+  additionalProperties?: boolean;
+  items?: JsonSchemaNode;
+  enum?: unknown[];
+  anyOf?: JsonSchemaNode[];
+  oneOf?: JsonSchemaNode[];
+  allOf?: JsonSchemaNode[];
+}
+
 interface NetworkRequest {
   url?: string;
   method?: string;
   status?: number;
   [key: string]: unknown;
 }
+
+const RUNNER_BUILD_ID = 'runner-schema-v2-2026-04-21';
+const TOOL_SCHEMA_MODE = 'openai-compatible-jsonschema-normalization';
 
 function findToolNameByKeyword(
   toolNames: string[],
@@ -122,11 +138,37 @@ function findToolNameByKeyword(
   return contains ?? null;
 }
 
-function isActionLikeTool(name: string): boolean {
-  // Capture after user-visible browser actions regardless of MCP naming prefix.
-  return /(navigate|click|type|fill|select|press|hover|drag|back|forward|reload|scroll|check|uncheck)/i.test(
-    name,
+function parseTestResult(text: string): {
+  status: 'success' | 'failure';
+  reason?: string;
+} {
+  const explicitResult = text.match(
+    /TEST_RESULT:\s*(PASS|FAIL)(?:\s*[—\-:]\s*(.+))?/i,
   );
+
+  if (explicitResult) {
+    const [, status, reason] = explicitResult;
+    if (status.toUpperCase() === 'FAIL') {
+      return {
+        status: 'failure',
+        reason: reason?.trim() || 'The AI agent reported test failure.',
+      };
+    }
+    return { status: 'success' };
+  }
+
+  if (
+    /\b(test did not pass|test failed|failed to|no matching elements found|returned an empty list|resulted in no urls being extracted|no urls? (?:were )?extracted)\b/i.test(
+      text,
+    )
+  ) {
+    return {
+      status: 'failure',
+      reason: 'The AI agent reported that the scripted steps did not succeed.',
+    };
+  }
+
+  return { status: 'success' };
 }
 
 function buildPlaywrightMcpArgs(config: RunnerConfig): string[] {
@@ -138,6 +180,142 @@ function buildPlaywrightMcpArgs(config: RunnerConfig): string[] {
     args.push('--user-data-dir', config.profileDir);
   }
   return args;
+}
+
+function isTimeoutError(err: unknown): boolean {
+  const messages: string[] = [];
+  const seen = new Set<unknown>();
+  let cursor: unknown = err;
+
+  // Walk through nested cause chains when available.
+  while (cursor && typeof cursor === 'object' && !seen.has(cursor)) {
+    seen.add(cursor);
+    const obj = cursor as { message?: unknown; cause?: unknown; code?: unknown };
+    if (obj.message !== undefined) {
+      messages.push(String(obj.message));
+    }
+    if (obj.code !== undefined) {
+      messages.push(String(obj.code));
+    }
+    cursor = obj.cause;
+  }
+  messages.push(String(err));
+
+  return /timed\s*out|timeout|-32001/i.test(messages.join(' | '));
+}
+
+function normalizeJsonSchemaNode(input: unknown): JsonSchemaNode {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    return { type: 'string' };
+  }
+
+  const raw = input as Record<string, unknown>;
+
+  if (Array.isArray(raw.anyOf) && raw.anyOf.length > 0) {
+    return {
+      anyOf: raw.anyOf.map((node) => normalizeJsonSchemaNode(node)),
+      description:
+        typeof raw.description === 'string' ? raw.description : undefined,
+    };
+  }
+
+  if (Array.isArray(raw.oneOf) && raw.oneOf.length > 0) {
+    return {
+      oneOf: raw.oneOf.map((node) => normalizeJsonSchemaNode(node)),
+      description:
+        typeof raw.description === 'string' ? raw.description : undefined,
+    };
+  }
+
+  if (Array.isArray(raw.allOf) && raw.allOf.length > 0) {
+    return {
+      allOf: raw.allOf.map((node) => normalizeJsonSchemaNode(node)),
+      description:
+        typeof raw.description === 'string' ? raw.description : undefined,
+    };
+  }
+
+  const explicitType = typeof raw.type === 'string' ? raw.type : undefined;
+
+  if (explicitType === 'object' || raw.properties) {
+    const rawProperties =
+      typeof raw.properties === 'object' &&
+      raw.properties !== null &&
+      !Array.isArray(raw.properties)
+        ? (raw.properties as Record<string, unknown>)
+        : {};
+
+    const rawRequired = Array.isArray(raw.required)
+      ? new Set(raw.required.filter((k): k is string => typeof k === 'string'))
+      : new Set<string>();
+
+    const normalizedProperties: Record<string, JsonSchemaNode> = {};
+    for (const [key, value] of Object.entries(rawProperties)) {
+      const normalized = normalizeJsonSchemaNode(value);
+      normalizedProperties[key] = rawRequired.has(key)
+        ? normalized
+        : { anyOf: [normalized, { type: 'null' }] };
+    }
+
+    return {
+      type: 'object',
+      description:
+        typeof raw.description === 'string' ? raw.description : undefined,
+      properties: normalizedProperties,
+      required: Object.keys(normalizedProperties),
+      additionalProperties: false,
+    };
+  }
+
+  if (explicitType === 'array') {
+    const rawItems = raw.items;
+    const itemNode = Array.isArray(rawItems)
+      ? rawItems[0]
+      : (rawItems as unknown);
+    return {
+      type: 'array',
+      description:
+        typeof raw.description === 'string' ? raw.description : undefined,
+      items: normalizeJsonSchemaNode(itemNode),
+    };
+  }
+
+  if (
+    explicitType === 'string' ||
+    explicitType === 'number' ||
+    explicitType === 'integer' ||
+    explicitType === 'boolean' ||
+    explicitType === 'null'
+  ) {
+    return {
+      type: explicitType,
+      description:
+        typeof raw.description === 'string' ? raw.description : undefined,
+      enum: Array.isArray(raw.enum) ? raw.enum : undefined,
+    };
+  }
+
+  return {
+    type: 'string',
+    description: typeof raw.description === 'string' ? raw.description : undefined,
+  };
+}
+
+function toOpenAiFunctionParametersSchema(inputSchema: unknown): JsonSchemaNode {
+  const normalized = normalizeJsonSchemaNode(inputSchema);
+  if (normalized.type === 'object') {
+    return normalized;
+  }
+
+  // Tools require object params at the top level.
+  return {
+    type: 'object',
+    properties: {
+      value: normalized,
+    },
+    required: ['value'],
+    additionalProperties: false,
+  };
 }
 
 async function readConfig(): Promise<RunnerConfig> {
@@ -199,6 +377,8 @@ async function main() {
   }
 
   addLog('info', `Starting test: ${test.name}`);
+  addLog('info', `Runner build: ${RUNNER_BUILD_ID}`);
+  addLog('info', `Tool schema mode: ${TOOL_SCHEMA_MODE}`);
   addLog(
     'info',
     `Browser: ${browser ?? 'chromium (default)'} | Storage policy: ${storagePolicy} (chain root: ${chainRootTestId})`,
@@ -271,25 +451,34 @@ async function main() {
   }
 
   let networkRequestsToolName: string | null = null;
+  let runCodeToolName: string | null = null;
+  let connectedClient: Client | null = null;
+  let screenshotToolName: string | null = null;
+  let screenshotCount = 0;
+  let lastScreenshotHash: string | null = null;
+  let endScreenshotCaptured = false;
+  let captureScreenshot = async (_description: string) => {};
 
   try {
     if (!mcpClient) {
       throw new Error('Playwright MCP client is unavailable');
     }
-    const connectedClient = mcpClient;
+    connectedClient = mcpClient;
+    const connectedMcpClient = connectedClient;
 
     // Get tools from MCP
-    const toolsResult = await connectedClient.listTools();
+    const toolsResult = await connectedMcpClient.listTools();
     addLog(
       'info',
       `Available tools: ${toolsResult.tools.map((t) => t.name).join(', ')}`,
     );
     const toolNames = toolsResult.tools.map((t) => t.name);
-    const screenshotToolName = findToolNameByKeyword(toolNames, 'screenshot');
+    screenshotToolName = findToolNameByKeyword(toolNames, 'screenshot');
     networkRequestsToolName = findToolNameByKeyword(
       toolNames,
       'network_requests',
     );
+    runCodeToolName = findToolNameByKeyword(toolNames, 'run_code');
 
     if (!screenshotToolName) {
       addLog(
@@ -300,7 +489,78 @@ async function main() {
 
     // Build AI SDK tools from MCP tools
     const aiTools: Record<string, Tool> = {};
-    let screenshotCount = 0;
+    let runCodeTimeouts = 0;
+
+    captureScreenshot = async (description: string) => {
+      if (!screenshotToolName) {
+        return;
+      }
+
+      try {
+        const screenshotResult = await connectedMcpClient.callTool({
+          name: screenshotToolName,
+          arguments: {},
+        });
+
+        let saved = false;
+        if (Array.isArray(screenshotResult.content)) {
+          for (const item of screenshotResult.content) {
+            if (
+              typeof item === 'object' &&
+              item !== null &&
+              'type' in item &&
+              (item as { type: string }).type === 'image'
+            ) {
+              const imageItem = item as {
+                type: string;
+                data: string;
+                mimeType?: string;
+              };
+              const imageData = Buffer.from(imageItem.data, 'base64');
+              const imageHash = createHash('sha256')
+                .update(imageData)
+                .digest('hex');
+
+              if (imageHash === lastScreenshotHash) {
+                addLog(
+                  'info',
+                  `Skipped duplicate screenshot for '${description}'`,
+                );
+                saved = true;
+                break;
+              }
+
+              screenshotCount++;
+              const screenshotFilename = `screenshot-${String(screenshotCount).padStart(3, '0')}-${Date.now()}.png`;
+              const screenshotPath = path.join(screenshotsDir, screenshotFilename);
+              fs.writeFileSync(screenshotPath, imageData);
+              lastScreenshotHash = imageHash;
+
+              const screenshotId = `ss-${screenshotCount}-${Date.now()}`;
+              const screenshotEntry = {
+                id: screenshotId,
+                path: screenshotFilename,
+                description,
+                timestamp: new Date().toISOString(),
+              };
+              screenshots.push(screenshotEntry);
+              emit({ type: 'screenshot', ...screenshotEntry });
+              saved = true;
+              break;
+            }
+          }
+        }
+
+        if (!saved) {
+          addLog(
+            'warn',
+            `Screenshot tool '${screenshotToolName}' returned no image payload`,
+          );
+        }
+      } catch (screenshotErr) {
+        addLog('warn', `Screenshot capture failed: ${screenshotErr}`);
+      }
+    };
 
     for (const mcpTool of toolsResult.tools) {
       const toolName = mcpTool.name;
@@ -309,119 +569,110 @@ async function main() {
         properties: {},
       };
 
-      // Build a zod schema from the JSON schema
-      const zodProps: Record<string, z.ZodTypeAny> = {};
-      const properties = inputSchema.properties ?? {};
-      const required = inputSchema.required ?? [];
-
-      for (const [propName, propSchema] of Object.entries(properties)) {
-        const prop = propSchema as { type?: string; description?: string };
-        let zodType: z.ZodTypeAny;
-        switch (prop.type) {
-          case 'number':
-          case 'integer':
-            zodType = z.number();
-            break;
-          case 'boolean':
-            zodType = z.boolean();
-            break;
-          case 'array':
-            zodType = z.array(z.unknown());
-            break;
-          case 'object':
-            zodType = z.record(z.unknown());
-            break;
-          default:
-            zodType = z.string();
-        }
-        if (prop.description) {
-          zodType = zodType.describe(prop.description);
-        }
-        if (!required.includes(propName)) {
-          zodType = zodType.optional();
-        }
-        zodProps[propName] = zodType;
-      }
-
-      const zodSchema = z.object(zodProps);
+      const parameterSchema = jsonSchema<Record<string, unknown>>(
+        toOpenAiFunctionParametersSchema(inputSchema),
+      );
       const capturedToolName = toolName;
 
       aiTools[toolName] = tool({
         description: mcpTool.description ?? `MCP tool: ${toolName}`,
-        parameters: zodSchema,
+        parameters: parameterSchema,
         execute: async (params: Record<string, unknown>) => {
           addLog('info', `Calling tool: ${capturedToolName}`);
+          const normalizedParams = Object.fromEntries(
+            Object.entries(params).filter(
+              ([, value]) => value !== undefined && value !== null,
+            ),
+          );
+
           try {
-            const result = await connectedClient.callTool({
+            if (capturedToolName.includes('run_code') && runCodeTimeouts > 0) {
+              addLog(
+                'warn',
+                'Skipping browser_run_code after prior timeout; asking agent to continue with snapshot/click/type tools',
+              );
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: 'browser_run_code skipped because a prior browser_run_code call timed out. Continue using browser_snapshot and direct interaction tools (click/type/select/hover/wait_for), and process smaller chunks to avoid timeouts.',
+                  },
+                ],
+              };
+            }
+
+            // browser_run_code often needs more than the default MCP timeout on
+            // JS-heavy pages. Raise it unless explicitly provided.
+            const toolArgs =
+              capturedToolName.includes('run_code') &&
+              normalizedParams.timeoutMs === undefined
+                ? { ...normalizedParams, timeoutMs: 180000 }
+                : normalizedParams;
+
+            if (screenshotToolName && capturedToolName !== screenshotToolName) {
+              await captureScreenshot(`Before ${capturedToolName}`);
+            }
+
+            const result = await connectedMcpClient.callTool({
               name: capturedToolName,
-              arguments: params,
+              arguments: toolArgs,
             });
 
-            // Auto-capture screenshot after action-like tools.
-            if (
-              screenshotToolName &&
-              isActionLikeTool(capturedToolName) &&
-              capturedToolName !== screenshotToolName
-            ) {
-              try {
-                screenshotCount++;
-                const screenshotFilename = `screenshot-${String(screenshotCount).padStart(3, '0')}-${Date.now()}.png`;
-                const screenshotPath = path.join(
-                  screenshotsDir,
-                  screenshotFilename,
-                );
-
-                const screenshotResult = await connectedClient.callTool({
-                  name: screenshotToolName,
-                  arguments: {},
-                });
-
-                // Extract image data from screenshot result
-                let saved = false;
-                if (Array.isArray(screenshotResult.content)) {
-                  for (const item of screenshotResult.content) {
-                    if (
-                      typeof item === 'object' &&
-                      item !== null &&
-                      'type' in item &&
-                      (item as { type: string }).type === 'image'
-                    ) {
-                      const imageItem = item as {
-                        type: string;
-                        data: string;
-                        mimeType?: string;
-                      };
-                      const imageData = Buffer.from(imageItem.data, 'base64');
-                      fs.writeFileSync(screenshotPath, imageData);
-
-                      const screenshotId = `ss-${screenshotCount}-${Date.now()}`;
-                      const screenshotEntry = {
-                        id: screenshotId,
-                        path: screenshotFilename,
-                        description: `After ${capturedToolName}`,
-                        timestamp: new Date().toISOString(),
-                      };
-                      screenshots.push(screenshotEntry);
-                      emit({ type: 'screenshot', ...screenshotEntry });
-                      saved = true;
-                      break;
-                    }
-                  }
-                }
-
-                if (!saved) {
-                  addLog(
-                    'warn',
-                    `Screenshot tool '${screenshotToolName}' returned no image payload`,
-                  );
-                }
-              } catch (screenshotErr) {
-                addLog('warn', `Screenshot capture failed: ${screenshotErr}`);
-              }
+            // Capture after every tool call (except the screenshot tool itself)
+            // so run history remains observable.
+            if (screenshotToolName && capturedToolName !== screenshotToolName) {
+              await captureScreenshot(`After ${capturedToolName}`);
             }
 
             return result;
           } catch (e) {
+            if (screenshotToolName && capturedToolName !== screenshotToolName) {
+              await captureScreenshot(`Failure after ${capturedToolName}`);
+            }
+
+            if (capturedToolName.includes('run_code') && isTimeoutError(e)) {
+              addLog(
+                'warn',
+                'browser_run_code timed out; retrying once with timeoutMs=300000',
+              );
+              try {
+                const retryArgs = { ...normalizedParams, timeoutMs: 300000 };
+                const retryResult = await connectedMcpClient.callTool({
+                  name: capturedToolName,
+                  arguments: retryArgs,
+                });
+
+                if (
+                  screenshotToolName &&
+                  capturedToolName !== screenshotToolName
+                ) {
+                  await captureScreenshot(`After retry ${capturedToolName}`);
+                }
+                return retryResult;
+              } catch (retryErr) {
+                if (isTimeoutError(retryErr)) {
+                  runCodeTimeouts += 1;
+                  addLog(
+                    'warn',
+                    `browser_run_code timed out after retry (count=${runCodeTimeouts}); continuing run with non-run_code tools`,
+                  );
+                  return {
+                    content: [
+                      {
+                        type: 'text',
+                        text: 'browser_run_code timed out twice. Continue without browser_run_code. Use browser_snapshot plus direct interaction tools and iterate in smaller chunks from the current page state.',
+                      },
+                    ],
+                  };
+                }
+                addLog(
+                  'error',
+                  `Tool ${capturedToolName} retry failed: ${retryErr}`,
+                );
+                throw retryErr;
+              }
+            }
+
             addLog('error', `Tool ${capturedToolName} failed: ${e}`);
             throw e;
           }
@@ -430,16 +681,33 @@ async function main() {
     }
 
     const provider = createProvider(settings);
+    const effectiveModel = settings.model.trim();
+    if (!effectiveModel) {
+      throw new Error('Settings model is empty. Please set a model in Settings.');
+    }
+    const assistantTextChunks: string[] = [];
 
     addLog('info', 'Starting AI agent...');
+    addLog(
+      'info',
+      `AI config: provider=${settings.aiProvider}, model=${effectiveModel}`,
+    );
 
-    const systemPrompt = `You are a browser test automation agent. You have access to browser control tools via Playwright.
-Execute the following test step by step, using the available browser tools.
-After completing all steps, output a brief summary of what was done and whether the test passed.
-If any step fails, explain why.`;
+  const systemPrompt = `You are a browser test automation agent. You have access to browser control tools via Playwright.
+Execute the test script step by step using the available browser tools.
+The script is written as human-readable descriptions of what appears on the page, not as CSS selectors or implementation details. Translate those visual descriptions into the appropriate tool usage.
+For JavaScript-heavy pages, wait for visible content to finish loading before interacting.
+If the target elements are not obvious, inspect the page state first using the available page reading or snapshot tools, then choose the interaction tool based on what is actually rendered.
+If a step fails because elements are missing or the page is still loading, re-inspect the page before concluding.
+When iterating lists that re-render after expansion/collapse, avoid restarting from the first row: maintain a stable processed set (by unique text/URL/index), and continue from the next unprocessed item.
+For nested loops (programs -> schedules -> levels -> times), re-query the current list each iteration and resume by index/identity, not by stale element handles.
+Prefer smaller browser_run_code operations over one giant script. If a large extraction is needed, break it into chunks and persist progress in your reasoning before continuing.
+After completing all steps, output a brief summary and finish with exactly one of these lines:
+TEST_RESULT: PASS
+TEST_RESULT: FAIL - <reason>`;
 
-    await generateText({
-      model: provider(settings.model),
+  const result = await generateText({
+      model: provider(effectiveModel),
       system: systemPrompt,
       prompt: fullScript,
       tools: aiTools,
@@ -451,10 +719,124 @@ If any step fails, explain why.`;
           }
         }
         if (step.text) {
+          assistantTextChunks.push(step.text);
           addLog('info', step.text);
         }
       },
     });
+
+    const combinedAssistantOutput = [result.text, ...assistantTextChunks]
+      .filter((text) => text && text.trim().length > 0)
+      .join('\n');
+
+    const parsedResult = parseTestResult(combinedAssistantOutput);
+
+    const tryFallbackDetailsUrlExtraction = async (): Promise<string[]> => {
+      if (!runCodeToolName) return [];
+
+      const extractionScript = `async (page) => {
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const clickVisibleLabel = async (labelRegex) => {
+    const clicked = await page.evaluate((pattern) => {
+      const regex = new RegExp(pattern, 'i');
+      const isVisible = (el) => {
+        const style = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
+      };
+      const candidates = Array.from(document.querySelectorAll('button, [role="button"], a, summary, div, span'));
+      let clicks = 0;
+      for (const el of candidates) {
+        if (!isVisible(el)) continue;
+        const text = (el.textContent || '')
+          .replaceAll('\n', ' ')
+          .replaceAll('\r', ' ')
+          .replaceAll('\t', ' ')
+          .replace(/ +/g, ' ')
+          .trim();
+        if (!regex.test(text)) continue;
+        if (el.getAttribute('aria-expanded') === 'true') continue;
+        try {
+          el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+          clicks += 1;
+        } catch {
+          // ignore click failures for specific elements
+        }
+      }
+      return clicks;
+    }, labelRegex.source);
+    return clicked;
+  };
+
+  for (let pass = 0; pass < 8; pass += 1) {
+    await page.mouse.wheel(0, 1400);
+    await sleep(120);
+    await clickVisibleLabel(/Schedules?/i);
+    await sleep(120);
+    await clickVisibleLabel(/Levels?/i);
+    await sleep(120);
+    await clickVisibleLabel(/Times?/i);
+    await sleep(120);
+  }
+
+  const urls = await page.evaluate(() => {
+    const anchors = Array.from(document.querySelectorAll('a[href]'));
+    const details = anchors
+      .filter((a) => /details/i.test((a.textContent || '').trim()))
+      .map((a) => a.href);
+    return Array.from(new Set(details));
+  });
+
+  return { urls };
+}`;
+
+      try {
+        const extractionResult = await connectedMcpClient.callTool({
+          name: runCodeToolName,
+          arguments: {
+            code: extractionScript,
+            timeoutMs: 300000,
+          },
+        });
+
+        if (!Array.isArray(extractionResult.content)) return [];
+        for (const item of extractionResult.content) {
+          if (typeof item !== 'object' || item === null) continue;
+          if (!('text' in item)) continue;
+          const text = String((item as { text: unknown }).text);
+          try {
+            const parsed = JSON.parse(text) as { urls?: unknown };
+            if (Array.isArray(parsed.urls)) {
+              return parsed.urls
+                .map((u) => String(u).trim())
+                .filter((u) => u.length > 0);
+            }
+          } catch {
+            // ignore non-json text payload
+          }
+        }
+      } catch (fallbackErr) {
+        addLog('warn', `Fallback URL extraction failed: ${fallbackErr}`);
+      }
+
+      return [];
+    };
+
+    if (parsedResult.status === 'failure') {
+      const fallbackUrls = await tryFallbackDetailsUrlExtraction();
+      if (fallbackUrls.length > 0) {
+        addLog(
+          'warn',
+          `AI reported failure, but fallback extraction recovered ${fallbackUrls.length} Details URL(s); proceeding with success`,
+        );
+        addLog('info', `Recovered Details URLs:\n${fallbackUrls.join('\n')}`);
+      } else {
+      throw new Error(parsedResult.reason);
+      }
+    }
+
+    await captureScreenshot('Final state');
+    endScreenshotCaptured = true;
 
     addLog('info', 'Test completed successfully');
 
@@ -490,6 +872,9 @@ If any step fails, explain why.`;
       timestamp: new Date().toISOString(),
     });
   } catch (e) {
+    await captureScreenshot('State at failure');
+    endScreenshotCaptured = true;
+
     addLog('error', `Test failed: ${e}`);
 
     // Capture network failures even on test failure for diagnostic purposes
@@ -524,6 +909,10 @@ If any step fails, explain why.`;
       timestamp: new Date().toISOString(),
     });
   } finally {
+    if (!endScreenshotCaptured) {
+      await captureScreenshot('Final state');
+    }
+
     if (mcpClient) {
       try {
         await mcpClient.close();

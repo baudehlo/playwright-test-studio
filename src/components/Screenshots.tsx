@@ -1,18 +1,25 @@
 import { invoke } from '@tauri-apps/api/core';
 import { ChevronLeft, ChevronRight, Image } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Screenshot } from '../types';
 
 interface ScreenshotsProps {
   testId: string;
   runId: string;
   screenshots: Screenshot[];
+  autoFollowLatest?: boolean;
 }
 
-export function Screenshots({ testId, runId, screenshots }: ScreenshotsProps) {
+export function Screenshots({
+  testId,
+  runId,
+  screenshots,
+  autoFollowLatest = false,
+}: ScreenshotsProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [imgSrc, setImgSrc] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const previousLengthRef = useRef(0);
 
   useEffect(() => {
     setCurrentIdx(0);
@@ -20,11 +27,21 @@ export function Screenshots({ testId, runId, screenshots }: ScreenshotsProps) {
   }, [runId]);
 
   useEffect(() => {
+    const prevLength = previousLengthRef.current;
+    previousLengthRef.current = screenshots.length;
+
+    if (screenshots.length === 0) {
+      setCurrentIdx(0);
+      return;
+    }
+
     setCurrentIdx((prev) => {
-      if (screenshots.length === 0) return 0;
+      if (autoFollowLatest && screenshots.length > prevLength) {
+        return screenshots.length - 1;
+      }
       return Math.min(prev, screenshots.length - 1);
     });
-  }, [screenshots.length]);
+  }, [screenshots.length, autoFollowLatest]);
 
   useEffect(() => {
     if (screenshots.length === 0) {

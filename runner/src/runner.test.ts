@@ -28,6 +28,39 @@ function buildPlaywrightMcpArgs(config: RunnerConfigLike): string[] {
   return args;
 }
 
+function parseTestResult(text: string): {
+  status: 'success' | 'failure';
+  reason?: string;
+} {
+  const explicitResult = text.match(
+    /TEST_RESULT:\s*(PASS|FAIL)(?:\s*[—\-:]\s*(.+))?/i,
+  );
+
+  if (explicitResult) {
+    const [, status, reason] = explicitResult;
+    if (status.toUpperCase() === 'FAIL') {
+      return {
+        status: 'failure',
+        reason: reason?.trim() || 'The AI agent reported test failure.',
+      };
+    }
+    return { status: 'success' };
+  }
+
+  if (
+    /\b(test did not pass|test failed|failed to|no matching elements found|returned an empty list|resulted in no urls being extracted|no urls? (?:were )?extracted)\b/i.test(
+      text,
+    )
+  ) {
+    return {
+      status: 'failure',
+      reason: 'The AI agent reported that the scripted steps did not succeed.',
+    };
+  }
+
+  return { status: 'success' };
+}
+
 function buildFullScript(test: TestData, parentTests: TestData[]): string {
   const expandedScript = expandVariables(test.script, test.variables);
   if (parentTests.length === 0) return expandedScript;
@@ -271,5 +304,33 @@ describe('buildPlaywrightMcpArgs (browser profile behavior)', () => {
       '--user-data-dir',
       '/tmp/browser-profiles/root-test-id',
     ]);
+  });
+});
+
+describe('parseTestResult', () => {
+  it('treats explicit PASS markers as success', () => {
+    expect(parseTestResult('Summary\nTEST_RESULT: PASS')).toEqual({
+      status: 'success',
+    });
+  });
+
+  it('treats explicit FAIL markers as failure and preserves reason', () => {
+    expect(
+      parseTestResult('Summary\nTEST_RESULT: FAIL - No Details links found'),
+    ).toEqual({
+      status: 'failure',
+      reason: 'No Details links found',
+    });
+  });
+
+  it('falls back to heuristic failure phrases when no explicit marker exists', () => {
+    expect(
+      parseTestResult(
+        'The test did not pass because the script returned an empty list.',
+      ),
+    ).toEqual({
+      status: 'failure',
+      reason: 'The AI agent reported that the scripted steps did not succeed.',
+    });
   });
 });

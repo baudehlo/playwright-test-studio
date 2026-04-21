@@ -446,6 +446,16 @@ fn run_test(
 ) -> Result<String, String> {
     let runner_path = resolve_runner_entry(&app, &app_data_dir)?;
 
+    let _ = app.emit(
+        "run-event",
+        serde_json::json!({
+            "type": "log",
+            "level": "info",
+            "message": format!("Runner entry: {}", runner_path.to_string_lossy()),
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+        }),
+    );
+
     let run_id = uuid::Uuid::new_v4().to_string();
     let run_dir = PathBuf::from(&app_data_dir)
         .join("runs")

@@ -70,6 +70,15 @@ const defaultSettings: Settings = {
   model: 'gpt-4o',
 };
 
+function normalizeSettings(settings: Settings): Settings {
+  return {
+    ...settings,
+    apiKey: settings.apiKey.trim(),
+    model: settings.model.trim(),
+    baseUrl: settings.baseUrl?.trim() || undefined,
+  };
+}
+
 export const useStore = create<AppState>((set, get) => ({
   tests: [],
   collections: [],
@@ -188,7 +197,10 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   runTest: async (test: Test) => {
-    const { settings, collections, globalVariables } = get();
+    const { collections, globalVariables } = get();
+    // Resolve settings fresh from disk right before running to avoid stale in-memory state.
+    const persistedSettings = await invoke<Settings>('get_settings');
+    const settings = normalizeSettings(persistedSettings);
 
     // Merge variables: global → collection → test (highest priority wins)
     const collection = test.collectionId
@@ -358,8 +370,9 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   saveSettings: async (settings: Settings) => {
-    await invoke('save_settings', { settings });
-    set({ settings });
+    const normalized = normalizeSettings(settings);
+    await invoke('save_settings', { settings: normalized });
+    set({ settings: normalized });
   },
 
   loadInstalledBrowsers: async () => {

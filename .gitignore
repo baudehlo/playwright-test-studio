@@ -153,3 +153,6 @@ src-tauri/gen/schemas/
 
 # Vite/frontend build output
 dist/
+src-tauri/.playwright-mcp
+src-tauri/.DS_Store
+.DS_Store
