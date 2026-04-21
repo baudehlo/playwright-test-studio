@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
-import { createRequire } from 'node:module';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -197,8 +197,8 @@ function resolveLocalPlaywrightMcpCli(): string | null {
     const binRelativePath =
       typeof binField === 'string'
         ? binField
-        : binField?.['playwright-mcp'] ??
-          (binField ? Object.values(binField)[0] : undefined);
+        : (binField?.['playwright-mcp'] ??
+          (binField ? Object.values(binField)[0] : undefined));
 
     if (!binRelativePath) {
       return null;
