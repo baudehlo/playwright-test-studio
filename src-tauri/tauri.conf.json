@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "npm run prepare-tauri-node-bundle && npm run bundle-runner && vite",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run prepare-tauri-node-bundle && npm run bundle-runner && vite build",
+    "beforeBuildCommand": "npm run prepare-tauri-node-bundle && npm run bundle-runner-release && vite build",
     "frontendDist": "../dist"
   },
   "app": {

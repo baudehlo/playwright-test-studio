@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare-tauri-node-bundle": "node scripts/prepare-tauri-node-bundle.mjs",
-    "bundle-runner": "cd runner && npm install && npm run build",
+    "bundle-runner": "cd runner && npm ci && npm run build",
+    "bundle-runner-release": "cd runner && npm ci && npm run build && npm prune --omit=dev",
     "cargo-check": "cargo check --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
