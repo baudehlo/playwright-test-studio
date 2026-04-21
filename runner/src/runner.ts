@@ -43,6 +43,8 @@ interface RunnerConfig {
   chainRootTestId?: string;
   profileDir?: string;
   browser?: string;
+  nodeBinaryPath?: string;
+  npxCliPath?: string;
 }
 
 interface RunEvent {
@@ -180,6 +182,23 @@ function buildPlaywrightMcpArgs(config: RunnerConfig): string[] {
     args.push('--user-data-dir', config.profileDir);
   }
   return args;
+}
+
+function buildMcpCommand(config: RunnerConfig): {
+  command: string;
+  args: string[];
+} {
+  const mcpArgs = buildPlaywrightMcpArgs(config);
+  if (config.nodeBinaryPath && config.npxCliPath) {
+    return {
+      command: config.nodeBinaryPath,
+      args: [config.npxCliPath, ...mcpArgs],
+    };
+  }
+  return {
+    command: 'npx',
+    args: mcpArgs,
+  };
 }
 
 function isTimeoutError(err: unknown): boolean {
@@ -421,9 +440,10 @@ async function main() {
 
   try {
     addLog('info', 'Connecting to Playwright MCP server...');
+    const mcpCommand = buildMcpCommand(config);
     transport = new StdioClientTransport({
-      command: 'npx',
-      args: buildPlaywrightMcpArgs(config),
+      command: mcpCommand.command,
+      args: mcpCommand.args,
     });
 
     mcpClient = new Client(

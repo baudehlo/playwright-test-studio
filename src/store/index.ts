@@ -62,6 +62,7 @@ interface AppState {
   loadSettings: () => Promise<void>;
   saveSettings: (settings: Settings) => Promise<void>;
   loadInstalledBrowsers: () => Promise<void>;
+  installBrowser: (browser: BrowserName) => Promise<void>;
 }
 
 const defaultSettings: Settings = {
@@ -382,5 +383,9 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (e) {
       console.error('Failed to load installed browsers:', e);
     }
+  },
+
+  installBrowser: async (browser: BrowserName) => {
+    await invoke('install_browser', { browser });
   },
 }));

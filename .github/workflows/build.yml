@@ -93,6 +93,41 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - run: npm ci
       - run: cd runner && npm ci && npm run build
+      - name: Download bundled Node.js (macOS arm64)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          NODE_VERSION=22.13.1
+          mkdir -p src-tauri/binaries src-tauri/node-dist
+          curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-darwin-arm64.tar.gz" | tar -xz
+          cp "node-v${NODE_VERSION}-darwin-arm64/bin/node" "src-tauri/binaries/node-aarch64-apple-darwin"
+          cp -R "node-v${NODE_VERSION}-darwin-arm64/lib/node_modules/npm" "src-tauri/node-dist/npm"
+          chmod +x "src-tauri/binaries/node-aarch64-apple-darwin"
+          rm -rf "node-v${NODE_VERSION}-darwin-arm64"
+      - name: Download bundled Node.js (Linux x64)
+        if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
+        run: |
+          set -euo pipefail
+          NODE_VERSION=22.13.1
+          mkdir -p src-tauri/binaries src-tauri/node-dist
+          curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.gz" | tar -xz
+          cp "node-v${NODE_VERSION}-linux-x64/bin/node" "src-tauri/binaries/node-x86_64-unknown-linux-gnu"
+          cp -R "node-v${NODE_VERSION}-linux-x64/lib/node_modules/npm" "src-tauri/node-dist/npm"
+          chmod +x "src-tauri/binaries/node-x86_64-unknown-linux-gnu"
+          rm -rf "node-v${NODE_VERSION}-linux-x64"
+      - name: Download bundled Node.js (Windows x64)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $version = "22.13.1"
+          New-Item -ItemType Directory -Force src-tauri/binaries, src-tauri/node-dist | Out-Null
+          Invoke-WebRequest "https://nodejs.org/dist/v$version/node-v$version-win-x64.zip" -OutFile node.zip
+          Expand-Archive node.zip .
+          Copy-Item "node-v$version-win-x64/node.exe" "src-tauri/binaries/node-x86_64-pc-windows-msvc.exe"
+          Copy-Item -Recurse "node-v$version-win-x64/node_modules/npm" "src-tauri/node-dist/npm"
+          Remove-Item -Recurse -Force "node-v$version-win-x64", node.zip
       - name: Validate release token
         shell: bash
         env:

@@ -1,8 +1,17 @@
 import { invoke } from '@tauri-apps/api/core';
-import { Eye, EyeOff, Plus, RefreshCw, Save, Trash2 } from 'lucide-react';
+import { listen } from '@tauri-apps/api/event';
+import {
+  Download,
+  Eye,
+  EyeOff,
+  Plus,
+  RefreshCw,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
-import type { Settings as SettingsType } from '../types';
+import type { BrowserName, Settings as SettingsType } from '../types';
 import { BrowserSelector } from './BrowserSelector';
 
 const SIDEBAR_WIDTH_KEY = 'pts.layout.sidebarWidth';
@@ -115,6 +124,8 @@ export function Settings() {
     globalVariables,
     saveGlobalVariables,
     installedBrowsers,
+    loadInstalledBrowsers,
+    installBrowser,
   } = useStore();
   const [form, setForm] = useState(settings);
   const [showKey, setShowKey] = useState(false);
@@ -125,6 +136,11 @@ export function Settings() {
   const [globalVarsDirty, setGlobalVarsDirty] = useState(false);
   const [globalVarsSaved, setGlobalVarsSaved] = useState(false);
   const [layoutReset, setLayoutReset] = useState(false);
+  const [installingBrowser, setInstallingBrowser] = useState<BrowserName | null>(
+    null,
+  );
+  const [installLog, setInstallLog] = useState<string[]>([]);
+  const installLogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setForm(settings);
@@ -135,6 +151,38 @@ export function Settings() {
       Object.entries(globalVariables).map(([key, value]) => ({ key, value })),
     );
   }, [globalVariables]);
+
+  useEffect(() => {
+    if (!installLogRef.current) return;
+    installLogRef.current.scrollTop = installLogRef.current.scrollHeight;
+  }, [installLog]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const unsubscribe = listen<{
+      type: 'start' | 'log' | 'complete' | 'error';
+      browser: BrowserName;
+      message: string;
+      timestamp?: string;
+    }>('browser-install-event', (event) => {
+      if (!isMounted) return;
+      const payload = event.payload;
+      const line = payload.timestamp
+        ? `[${new Date(payload.timestamp).toLocaleTimeString()}] ${payload.message}`
+        : payload.message;
+      setInstallLog((prev) => [...prev, line]);
+
+      if (payload.type === 'complete' || payload.type === 'error') {
+        setInstallingBrowser(null);
+        void loadInstalledBrowsers();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      void unsubscribe.then((fn) => fn()).catch(() => {});
+    };
+  }, [loadInstalledBrowsers]);
 
   const [fetchedModels, setFetchedModels] = useState<string[] | null>(null);
   const [fetchingModels, setFetchingModels] = useState(false);
@@ -229,6 +277,21 @@ export function Settings() {
     setLayoutReset(true);
     setTimeout(() => setLayoutReset(false), 2000);
     window.location.reload();
+  };
+
+  const handleInstallBrowser = async (browser: BrowserName) => {
+    if (installingBrowser) return;
+    setInstallLog([]);
+    setInstallingBrowser(browser);
+    try {
+      await installBrowser(browser);
+    } catch (e) {
+      setInstallingBrowser(null);
+      setInstallLog((prev) => [
+        ...prev,
+        `Failed to start install for ${browser}: ${String(e)}`,
+      ]);
+    }
   };
 
   const models = fetchedModels ?? PROVIDER_MODELS[form.aiProvider] ?? [];
@@ -352,6 +415,66 @@ export function Settings() {
             }
             inheritedLabel="No default set — tests will run in Chromium"
           />
+        </div>
+
+        <div>
+          <h2 className="text-sm font-medium text-slate-300 mb-2">
+            Browser Installation
+          </h2>
+          <p className="text-xs text-slate-500 mb-3">
+            Install Playwright browser engines on this machine. Chromium is
+            required for first run, Firefox and WebKit are optional.
+          </p>
+          <div className="space-y-2">
+            {(['chromium', 'firefox', 'webkit'] as BrowserName[]).map(
+              (browser) => {
+                const installed = installedBrowsers.includes(browser);
+                const isInstalling = installingBrowser === browser;
+                const isBusy = installingBrowser !== null;
+                return (
+                  <div
+                    key={browser}
+                    className="flex items-center justify-between rounded border border-slate-700 bg-slate-900 px-3 py-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm capitalize text-slate-200">
+                        {browser}
+                      </span>
+                      <span
+                        className={`text-xs ${
+                          installed ? 'text-emerald-500' : 'text-slate-500'
+                        }`}
+                      >
+                        {installed ? 'Installed' : 'Not installed'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleInstallBrowser(browser)}
+                      disabled={isBusy}
+                      className="flex items-center gap-1 rounded bg-violet-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {isInstalling
+                        ? 'Installing...'
+                        : installed
+                          ? 'Reinstall'
+                          : 'Install'}
+                    </button>
+                  </div>
+                );
+              },
+            )}
+          </div>
+          {installLog.length > 0 && (
+            <div
+              ref={installLogRef}
+              className="mt-3 h-36 overflow-y-auto rounded border border-slate-700 bg-slate-950 p-2 font-mono text-[11px] text-slate-300"
+            >
+              {installLog.map((line, index) => (
+                <div key={`${index}-${line.slice(0, 16)}`}>{line}</div>
+              ))}
+            </div>
+          )}
         </div>
 
         {(form.aiProvider === 'azure-openai' ||

@@ -406,14 +406,112 @@ fn get_playwright_cache_dir() -> Option<PathBuf> {
     }
 }
 
+fn path_contains_node_binary(path: &PathBuf) -> bool {
+    if !path.is_file() {
+        return false;
+    }
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| {
+            name == "node"
+                || name == "node.exe"
+                || name.starts_with("node-")
+                || name.starts_with("node-") && name.ends_with(".exe")
+        })
+        .unwrap_or(false)
+}
+
+fn resolve_node_binary(app: &AppHandle) -> String {
+    // Development path: when binaries are downloaded into src-tauri/binaries.
+    let dev_binaries_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("binaries");
+    if let Ok(entries) = fs::read_dir(&dev_binaries_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path_contains_node_binary(&path) {
+                return path.to_string_lossy().to_string();
+            }
+        }
+    }
+
+    // Production path: external binaries are typically placed next to the app executable.
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(exe_dir) = current_exe.parent() {
+            let direct = exe_dir.join(if cfg!(target_os = "windows") {
+                "node.exe"
+            } else {
+                "node"
+            });
+            if direct.exists() {
+                return direct.to_string_lossy().to_string();
+            }
+
+            if let Ok(entries) = fs::read_dir(exe_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path_contains_node_binary(&path) {
+                        return path.to_string_lossy().to_string();
+                    }
+                }
+            }
+        }
+    }
+
+    // Additional production fallback: resource directory.
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let direct = resource_dir.join(if cfg!(target_os = "windows") {
+            "node.exe"
+        } else {
+            "node"
+        });
+        if direct.exists() {
+            return direct.to_string_lossy().to_string();
+        }
+
+        if let Ok(entries) = fs::read_dir(&resource_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path_contains_node_binary(&path) {
+                    return path.to_string_lossy().to_string();
+                }
+            }
+        }
+    }
+
+    "node".to_string()
+}
+
+fn resolve_npx_cli_path(app: &AppHandle) -> Option<String> {
+    // Development path: folder copied by CI/bootstrap scripts.
+    let dev_npx = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("node-dist")
+        .join("npm")
+        .join("bin")
+        .join("npx-cli.js");
+    if dev_npx.exists() {
+        return Some(dev_npx.to_string_lossy().to_string());
+    }
+
+    // Production path: bundled resource.
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let npx = resource_dir
+            .join("node-dist")
+            .join("npm")
+            .join("bin")
+            .join("npx-cli.js");
+        if npx.exists() {
+            return Some(npx.to_string_lossy().to_string());
+        }
+    }
+
+    None
+}
+
 #[tauri::command]
 fn get_installed_browsers() -> Vec<String> {
-    // Chromium is always included — @playwright/mcp defaults to Chromium and it
-    // is bundled with the Playwright install.
-    let mut installed = vec!["chromium".to_string()];
+    let mut installed = vec![];
 
     if let Some(dir) = get_playwright_cache_dir() {
-        for browser in &["firefox", "webkit"] {
+        for browser in &["chromium", "firefox", "webkit"] {
             let prefix = format!("{}-", browser);
             let found = fs::read_dir(&dir)
                 .ok()
@@ -437,6 +535,145 @@ fn get_installed_browsers() -> Vec<String> {
 }
 
 #[tauri::command]
+fn install_browser(app: AppHandle, browser: String) -> Result<(), String> {
+    let valid = ["chromium", "firefox", "webkit"];
+    if !valid.contains(&browser.as_str()) {
+        return Err(format!(
+            "Unsupported browser '{}'. Expected one of: chromium, firefox, webkit",
+            browser
+        ));
+    }
+
+    let node_binary = resolve_node_binary(&app);
+    let npx_cli_path = resolve_npx_cli_path(&app);
+    let browser_for_thread = browser.clone();
+    let app_handle = app.clone();
+
+    std::thread::spawn(move || {
+        let browser_name = browser_for_thread;
+        let _ = app_handle.emit(
+            "browser-install-event",
+            serde_json::json!({
+                "type": "start",
+                "browser": &browser_name,
+                "message": format!("Starting browser install: {}", browser_name),
+                "timestamp": chrono::Utc::now().to_rfc3339(),
+            }),
+        );
+
+        let mut command = if let Some(npx_cli) = npx_cli_path {
+            let mut cmd = std::process::Command::new(&node_binary);
+            cmd.arg(npx_cli)
+                .arg("playwright")
+                .arg("install")
+                .arg(&browser_name);
+            cmd
+        } else {
+            let mut cmd = std::process::Command::new("npx");
+            cmd.arg("playwright")
+                .arg("install")
+                .arg(&browser_name);
+            cmd
+        };
+
+        command
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+
+        match command.spawn() {
+            Err(e) => {
+                let _ = app_handle.emit(
+                    "browser-install-event",
+                    serde_json::json!({
+                        "type": "error",
+                        "browser": &browser_name,
+                        "message": format!("Failed to start browser installer: {}", e),
+                        "timestamp": chrono::Utc::now().to_rfc3339(),
+                    }),
+                );
+            }
+            Ok(mut child) => {
+                let stderr_handle = if let Some(stderr) = child.stderr.take() {
+                    let app_handle = app_handle.clone();
+                    let browser = browser_name.clone();
+                    Some(std::thread::spawn(move || {
+                        use std::io::BufRead;
+                        let reader = std::io::BufReader::new(stderr);
+                        for line in reader.lines().map_while(Result::ok) {
+                            let trimmed = line.trim();
+                            if trimmed.is_empty() {
+                                continue;
+                            }
+                            let _ = app_handle.emit(
+                                "browser-install-event",
+                                serde_json::json!({
+                                    "type": "log",
+                                    "browser": browser,
+                                    "message": trimmed,
+                                    "timestamp": chrono::Utc::now().to_rfc3339(),
+                                }),
+                            );
+                        }
+                    }))
+                } else {
+                    None
+                };
+
+                if let Some(stdout) = child.stdout.take() {
+                    use std::io::BufRead;
+                    let reader = std::io::BufReader::new(stdout);
+                    for line in reader.lines().map_while(Result::ok) {
+                        let trimmed = line.trim();
+                        if trimmed.is_empty() {
+                            continue;
+                        }
+                        let _ = app_handle.emit(
+                            "browser-install-event",
+                            serde_json::json!({
+                                "type": "log",
+                                "browser": &browser_name,
+                                "message": trimmed,
+                                "timestamp": chrono::Utc::now().to_rfc3339(),
+                            }),
+                        );
+                    }
+                }
+
+                let status_ok = child.wait().map(|s| s.success()).unwrap_or(false);
+
+                if let Some(handle) = stderr_handle {
+                    let _ = handle.join();
+                }
+
+                let (event_type, message) = if status_ok {
+                    (
+                        "complete",
+                        format!("Browser install completed: {}", browser_name),
+                    )
+                } else {
+                    (
+                        "error",
+                        format!("Browser install failed: {}", browser_name),
+                    )
+                };
+
+                let _ = app_handle.emit(
+                    "browser-install-event",
+                    serde_json::json!({
+                        "type": event_type,
+                        "browser": &browser_name,
+                        "message": message,
+                        "timestamp": chrono::Utc::now().to_rfc3339(),
+                    }),
+                );
+            }
+        }
+    });
+
+    Ok(())
+}
+
+#[tauri::command]
 fn run_test(
     app: AppHandle,
     test: Test,
@@ -445,6 +682,8 @@ fn run_test(
     browser: Option<String>,
 ) -> Result<String, String> {
     let runner_path = resolve_runner_entry(&app, &app_data_dir)?;
+    let node_binary = resolve_node_binary(&app);
+    let npx_cli_path = resolve_npx_cli_path(&app);
 
     let _ = app.emit(
         "run-event",
@@ -452,6 +691,15 @@ fn run_test(
             "type": "log",
             "level": "info",
             "message": format!("Runner entry: {}", runner_path.to_string_lossy()),
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+        }),
+    );
+    let _ = app.emit(
+        "run-event",
+        serde_json::json!({
+            "type": "log",
+            "level": "info",
+            "message": format!("Node runtime: {}", node_binary),
             "timestamp": chrono::Utc::now().to_rfc3339(),
         }),
     );
@@ -528,6 +776,8 @@ fn run_test(
         "chainRootTestId": chain_root_test_id,
         "profileDir": profile_dir.to_string_lossy(),
         "browser": browser,
+        "nodeBinaryPath": node_binary,
+        "npxCliPath": npx_cli_path,
     });
     let config_str = serde_json::to_string(&config).map_err(|e| e.to_string())?;
 
@@ -535,9 +785,10 @@ fn run_test(
     let run_id_clone = run_id.clone();
     let test_id = test.id.clone();
     let browser_clone = browser.clone();
+    let node_binary_for_thread = node_binary.clone();
 
     std::thread::spawn(move || {
-        let result = std::process::Command::new("node")
+        let result = std::process::Command::new(&node_binary_for_thread)
             .arg(&runner_path)
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
@@ -811,6 +1062,7 @@ pub fn run() {
             copy_runner_to_app_dir,
             run_test,
             get_installed_browsers,
+            install_browser,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
