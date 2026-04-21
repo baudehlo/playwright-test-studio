@@ -10,7 +10,60 @@ permissions:
   contents: write
 
 jobs:
+  release_notes:
+    runs-on: ubuntu-latest
+    outputs:
+      body: ${{ steps.compose.outputs.body }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compose release notes
+        id: compose
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          current_tag="v${VERSION}"
+          previous_tag="$(git tag --sort=-version:refname | grep -vx "$current_tag" | head -n 1 || true)"
+
+          if [[ -n "$previous_tag" ]]; then
+            commit_range="${previous_tag}..HEAD"
+            compare_text="Changes since ${previous_tag}"
+          else
+            commit_range="HEAD"
+            compare_text="Initial release notes"
+          fi
+
+          commit_log="$(git log --no-merges --pretty=format:'- %s (%h)' ${commit_range} | head -n 40 || true)"
+          if [[ -z "$commit_log" ]]; then
+            commit_log='- No commit summaries were available for this build.'
+          fi
+
+          notes_file="$RUNNER_TEMP/release-notes.md"
+          {
+            echo "## Playwright Test Studio ${current_tag}"
+            echo
+            echo "${compare_text}"
+            echo
+            echo "### Highlights"
+            echo "- Desktop app build generated via GitHub Actions"
+            echo "- Tauri bundles attached for the configured target platforms"
+            echo
+            echo "### Commit Summary"
+            echo "$commit_log"
+          } > "$notes_file"
+
+          {
+            echo 'body<<EOF'
+            cat "$notes_file"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
   build:
+    needs: release_notes
     strategy:
       matrix:
         include:
@@ -74,3 +127,30 @@ jobs:
           releaseName: 'v${{ inputs.version }}'
           generateReleaseNotes: true
           args: ${{ matrix.args }}
+
+  finalize_release_notes:
+    needs: [release_notes, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          RELEASE_BODY: ${{ needs.release_notes.outputs.body }}
+          RELEASE_TAG: v${{ inputs.version }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const tag = process.env.RELEASE_TAG;
+            const body = process.env.RELEASE_BODY;
+            const release = await github.rest.repos.getReleaseByTag({
+              owner,
+              repo,
+              tag,
+            });
+
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: release.data.id,
+              body,
+            });
