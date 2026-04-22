@@ -68,7 +68,13 @@ function main() {
   const npmInvocation = resolveNpmInvocation();
   run(
     npmInvocation.command,
-    [...npmInvocation.argsPrefix, 'ci', '--omit=dev', '--ignore-scripts'],
+    [
+      ...npmInvocation.argsPrefix,
+      'ci',
+      '--omit=dev',
+      '--omit=optional',
+      '--ignore-scripts',
+    ],
     bundleDir,
   );
 
