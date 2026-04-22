@@ -183,6 +183,11 @@ function buildPlaywrightMcpArgs(config: RunnerConfig): string[] {
   if (config.profileDir) {
     args.push('--user-data-dir', config.profileDir);
   }
+  // Provide a writable output dir so the MCP server can save screenshot/snapshot
+  // files before registering image payloads in its response. Without this the
+  // server inherits a potentially read-only cwd (e.g. App Translocation on macOS)
+  // and the addFileResult write silently fails, leaving _imageResults empty.
+  args.push('--output-dir', config.screenshotsDir);
   return args;
 }
 
