@@ -129,7 +129,7 @@ If the AI detects HTTP errors (4xx, 5xx responses) during the test, they are lis
 | Provider | Models |
 |----------|--------|
 | **OpenAI** | gpt-4o, gpt-4o-mini, gpt-4-turbo, o1, o1-mini |
-| **Anthropic** | claude-3-5-sonnet, claude-3-5-haiku, claude-3-opus |
+| **Anthropic** | claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5, claude-opus-4-5, claude-sonnet-4-5, claude-3-5-sonnet-20241022 |
 | **Groq** | llama-3.3-70b, llama-3.1-70b, mixtral-8x7b |
 | **Azure OpenAI** | gpt-4o, gpt-4, gpt-35-turbo (requires Base URL) |
 | **xAI / Grok** | grok-2, grok-beta |

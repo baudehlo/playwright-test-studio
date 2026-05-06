@@ -21,9 +21,11 @@ const SCREENSHOTS_WIDTH_KEY = 'pts.layout.runPanel.screenshotsWidth';
 const PROVIDER_MODELS: Record<SettingsType['aiProvider'], string[]> = {
   openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'o1', 'o1-mini'],
   anthropic: [
+    'claude-opus-4-7',
+    'claude-sonnet-4-6',
+    'claude-haiku-4-5',
     'claude-opus-4-5',
     'claude-sonnet-4-5',
-    'claude-haiku-4-5',
     'claude-3-5-sonnet-20241022',
   ],
   'azure-openai': ['gpt-4o', 'gpt-4', 'gpt-35-turbo'],
@@ -67,6 +69,7 @@ async function getModelsFromApi(
         headers: {
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
       });
       if (!res.ok) return [];
