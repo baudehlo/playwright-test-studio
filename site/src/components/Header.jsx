@@ -1,8 +1,7 @@
-
+import { Download, Github, Menu, Star } from 'lucide-react';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Github, Download, Star } from 'lucide-react';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +10,7 @@ const Header = () => {
     { name: 'Home', href: '#home' },
     { name: 'Features', href: '#features' },
     { name: 'How it Works', href: '#how-it-works' },
-    { name: 'Documentation', href: '#documentation' }
+    { name: 'Documentation', href: '#documentation' },
   ];
 
   const NavItems = ({ mobile = false }) => (
@@ -40,7 +39,9 @@ const Header = () => {
             <div className="bg-primary p-1.5 rounded-md">
               <BotIcon className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-foreground">Playwright Test Studio</span>
+            <span className="text-lg font-bold tracking-tight text-foreground">
+              Playwright Test Studio
+            </span>
           </a>
 
           {/* Desktop Nav */}
@@ -49,9 +50,9 @@ const Header = () => {
           </nav>
 
           <div className="hidden md:flex items-center space-x-4">
-            <a 
-              href="https://github.com/baudehlo/playwright-test-studio" 
-              target="_blank" 
+            <a
+              href="https://github.com/baudehlo/playwright-test-studio"
+              target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -61,7 +62,11 @@ const Header = () => {
               </span>
             </a>
             <Button asChild size="sm">
-              <a href="https://github.com/baudehlo/playwright-test-studio/releases" target="_blank" rel="noopener noreferrer">
+              <a
+                href="https://github.com/baudehlo/playwright-test-studio/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Download className="w-4 h-4 mr-2" />
                 Download Now
               </a>
@@ -71,30 +76,52 @@ const Header = () => {
           {/* Mobile Nav */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon" aria-label="Menu" className="text-foreground">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Menu"
+                className="text-foreground"
+              >
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[80vw] sm:w-[350px] bg-background border-border">
+            <SheetContent
+              side="right"
+              className="w-[80vw] sm:w-[350px] bg-background border-border"
+            >
               <div className="flex flex-col h-full">
                 <div className="py-6 flex items-center space-x-2">
                   <div className="bg-primary p-1 rounded">
                     <BotIcon className="w-4 h-4 text-primary-foreground" />
                   </div>
-                  <span className="font-bold text-foreground">Playwright Test Studio</span>
+                  <span className="font-bold text-foreground">
+                    Playwright Test Studio
+                  </span>
                 </div>
                 <nav className="flex flex-col space-y-2 flex-grow">
                   <NavItems mobile />
                 </nav>
                 <div className="flex flex-col gap-3 mt-auto pb-6">
-                  <Button variant="outline" asChild className="w-full justify-start">
-                    <a href="https://github.com/baudehlo/playwright-test-studio" target="_blank" rel="noopener noreferrer">
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="w-full justify-start"
+                  >
+                    <a
+                      href="https://github.com/baudehlo/playwright-test-studio"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <Github className="w-4 h-4 mr-2" />
                       GitHub Repository
                     </a>
                   </Button>
                   <Button asChild className="w-full justify-start">
-                    <a href="https://github.com/baudehlo/playwright-test-studio/releases" target="_blank" rel="noopener noreferrer">
+                    <a
+                      href="https://github.com/baudehlo/playwright-test-studio/releases"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <Download className="w-4 h-4 mr-2" />
                       Download Now
                     </a>

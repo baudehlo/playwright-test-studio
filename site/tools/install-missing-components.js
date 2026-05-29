@@ -1,33 +1,33 @@
-import fs from "fs";
-import path from "path";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { fileURLToPath } from "url";
+import { exec } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { promisify } from 'util';
 
 const APP_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "..",
+  '..',
 );
 
-const COMPONENTS_JSON_FILE = "components.json";
-const PACKAGE_JSON_FILE = "package.json";
-const TAILWIND_CONFIG_FILE = "tailwind.config.js";
+const COMPONENTS_JSON_FILE = 'components.json';
+const PACKAGE_JSON_FILE = 'package.json';
+const TAILWIND_CONFIG_FILE = 'tailwind.config.js';
 const FILES_UPDATED_BY_SHADCN_INIT = [
   PACKAGE_JSON_FILE,
   COMPONENTS_JSON_FILE,
   TAILWIND_CONFIG_FILE,
 ];
 
-const JSX_EXTENSION = "jsx";
-const JS_EXTENSION = "js";
+const JSX_EXTENSION = 'jsx';
+const JS_EXTENSION = 'js';
 
 const COMPONENT_NAME_TO_INSTALLABLE_COMPONENT_NAME_MAP = {
-  toaster: "toast",
-  "use-toast": "toast",
+  toaster: 'toast',
+  'use-toast': 'toast',
 };
 
 async function run() {
-  let stdout = "";
+  let stdout = '';
   let error = null;
   const updatedFiles = [];
 
@@ -59,7 +59,7 @@ async function run() {
 
     if (!componentsJsonExists) {
       const shadcnInitResult = await runCommand(
-        "npx -y shadcn@3 init -f --src-dir --no-base-style",
+        'npx -y shadcn@3 init -f --src-dir --no-base-style',
       );
 
       const shadcnInitOutput = [
@@ -67,7 +67,7 @@ async function run() {
         shadcnInitResult.stderr,
       ]
         .filter(Boolean)
-        .join("\n");
+        .join('\n');
 
       stdout = shadcnInitOutput;
 
@@ -83,12 +83,12 @@ async function run() {
     // If there are installable components, install them
     if (installableComponentNames.length && !error) {
       const shadcnAddResult = await runCommand(
-        `npx -y shadcn@3 add ${installableComponentNames.join(" ")} -y -o --src-dir`,
+        `npx -y shadcn@3 add ${installableComponentNames.join(' ')} -y -o --src-dir`,
       );
 
       const shadcnAddOutput = [shadcnAddResult.stdout, shadcnAddResult.stderr]
         .filter(Boolean)
-        .join("\n");
+        .join('\n');
 
       stdout = stdout ? `${stdout}\n${shadcnAddOutput}` : shadcnAddOutput;
 
@@ -102,7 +102,7 @@ async function run() {
         //   - src/components/ui/input.tsx
         // The code below extracts these file paths like this: src/components/ui/button.tsx, src/components/ui/input.tsx
         const filesUpdatedByShadcnAdd = shadcnAddOutput
-          .split("\n")
+          .split('\n')
           .flatMap((line) => {
             const match = line.match(/^\s*-\s*(src\/\S+)/);
             return match ? [match[1].trim()] : [];
@@ -112,7 +112,7 @@ async function run() {
       }
     }
   } catch (err) {
-    error = error ?? err?.message ?? "unknown error";
+    error = error ?? err?.message ?? 'unknown error';
   }
 
   const uniqueUpdatedFiles = [...new Set(updatedFiles)];
@@ -131,14 +131,14 @@ async function runCommand(command) {
     const { stdout, stderr } = await promisify(exec)(command);
 
     return {
-      stdout: stdout ?? "",
-      stderr: stderr ?? "",
+      stdout: stdout ?? '',
+      stderr: stderr ?? '',
       status: 0,
     };
   } catch (error) {
     return {
-      stdout: error.stdout ?? "",
-      stderr: error.stderr ?? "",
+      stdout: error.stdout ?? '',
+      stderr: error.stderr ?? '',
       status: error.code ?? 1,
     };
   }
@@ -176,7 +176,7 @@ async function scanDirectoryForUiImports(directoryPath) {
 
     if (isJsxFile) {
       try {
-        const fileContent = await fs.promises.readFile(fullEntryPath, "utf8");
+        const fileContent = await fs.promises.readFile(fullEntryPath, 'utf8');
 
         for (const [, componentName] of fileContent.matchAll(
           /@\/components\/ui\/([a-z0-9-]+)/g,
@@ -193,7 +193,7 @@ async function scanDirectoryForUiImports(directoryPath) {
 }
 
 async function findImportedComponentNames() {
-  const srcPath = path.join(APP_DIR, "src");
+  const srcPath = path.join(APP_DIR, 'src');
   const srcExists = await pathExists(srcPath);
 
   if (!srcExists) {
@@ -206,8 +206,8 @@ async function findImportedComponentNames() {
 }
 
 async function componentExists(componentName) {
-  const componentsUiPath = path.join(APP_DIR, "src", "components", "ui");
-  const hooksPath = path.join(APP_DIR, "src", "hooks");
+  const componentsUiPath = path.join(APP_DIR, 'src', 'components', 'ui');
+  const hooksPath = path.join(APP_DIR, 'src', 'hooks');
 
   const existenceChecks = await Promise.all(
     [JSX_EXTENSION, JS_EXTENSION].map(async (extension) => {

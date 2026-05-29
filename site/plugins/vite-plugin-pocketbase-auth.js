@@ -1,9 +1,9 @@
 export default function pocketbaseAuthPlugin() {
-	return {
-		name: 'vite:pocketbase-auth',
-		apply: 'serve',
-		transformIndexHtml() {
-			const script = `
+  return {
+    name: 'vite:pocketbase-auth',
+    apply: 'serve',
+    transformIndexHtml() {
+      const script = `
                 const ALLOWED_PARENT_ORIGINS = [
                     "https://horizons.hostinger.com",
                     "https://horizons.hostinger.dev",
@@ -39,14 +39,14 @@ export default function pocketbaseAuthPlugin() {
                 });
             `;
 
-			return [
-				{
-					tag: 'script',
-					attrs: { type: 'module' },
-					children: script,
-					injectTo: 'head'
-				}
-			];
-		}
-	};
+      return [
+        {
+          tag: 'script',
+          attrs: { type: 'module' },
+          children: script,
+          injectTo: 'head',
+        },
+      ];
+    },
+  };
 }

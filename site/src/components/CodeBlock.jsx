@@ -1,8 +1,7 @@
-
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Check, Copy } from 'lucide-react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 const CodeBlock = ({ code, language = 'bash' }) => {
   const [copied, setCopied] = useState(false);

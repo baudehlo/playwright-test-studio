@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -14,7 +14,8 @@ html {
 }
 
 /* Ensure smooth theme transitions */
-html, body {
+html,
+body {
   @apply transition-colors duration-300;
 }
 
@@ -22,60 +23,60 @@ html, body {
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
-    
+
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
-    
+
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    
+
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
-    
+
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
-    
+
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-    
+
     --accent: 240 4.8% 95.9%;
     --accent-foreground: 240 5.9% 10%;
-    
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    
+
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 221.2 83.2% 53.3%;
-    
+
     --radius: 0.75rem;
   }
-  
+
   .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
-    
+
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
-    
+
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    
+
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
-    
+
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
-    
+
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-    
+
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
-    
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    
+
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 217.2 91.2% 59.8%;
@@ -111,7 +112,7 @@ html, body {
   .section-container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
-  
+
   .gradient-heading {
     @apply bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent;
   }

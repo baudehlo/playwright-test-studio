@@ -1,9 +1,9 @@
 export default function iframeRouteRestorationPlugin() {
-	return {
-		name: 'vite:iframe-route-restoration',
-		apply: 'serve',
-		transformIndexHtml() {
-			const script = `
+  return {
+    name: 'vite:iframe-route-restoration',
+    apply: 'serve',
+    transformIndexHtml() {
+      const script = `
 			const ALLOWED_PARENT_ORIGINS = [
           "https://horizons.hostinger.com",
           "https://horizons.hostinger.dev",
@@ -113,14 +113,14 @@ export default function iframeRouteRestorationPlugin() {
         }
       `;
 
-			return [
-				{
-					tag: 'script',
-					attrs: { type: 'module' },
-					children: script,
-					injectTo: 'head'
-				}
-			];
-		}
-	};
+      return [
+        {
+          tag: 'script',
+          attrs: { type: 'module' },
+          children: script,
+          injectTo: 'head',
+        },
+      ];
+    },
+  };
 }

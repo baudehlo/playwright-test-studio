@@ -1,7 +1,6 @@
-
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 
 const FeatureCard = ({ icon: Icon, title, description, badge }) => {
   return (
@@ -13,12 +12,17 @@ const FeatureCard = ({ icon: Icon, title, description, badge }) => {
             <Icon className="w-6 h-6" />
           </div>
           {badge && (
-            <Badge variant="secondary" className="font-medium bg-secondary text-secondary-foreground">
+            <Badge
+              variant="secondary"
+              className="font-medium bg-secondary text-secondary-foreground"
+            >
               {badge}
             </Badge>
           )}
         </div>
-        <h3 className="text-xl font-semibold mb-2 text-foreground tracking-tight transition-colors">{title}</h3>
+        <h3 className="text-xl font-semibold mb-2 text-foreground tracking-tight transition-colors">
+          {title}
+        </h3>
         <p className="text-muted-foreground leading-relaxed flex-grow text-sm md:text-base transition-colors">
           {description}
         </p>
