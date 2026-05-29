@@ -110,7 +110,7 @@ const HomePage = () => {
             <img
               src="/app-icon.png"
               alt="Playwright Test Studio"
-              className="w-20 h-20 rounded-2xl mx-auto mb-8 shadow-xl"
+              className="w-14 h-14 rounded-xl mx-auto mb-6 shadow-lg"
             />
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 text-balance text-foreground">
               Browser test automation<br className="hidden md:block" />
@@ -150,6 +150,19 @@ const HomePage = () => {
                 </a>
               </Button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* App screenshot */}
+      <section className="pb-16">
+        <div className="section-container">
+          <div className="max-w-4xl mx-auto rounded-xl overflow-hidden border border-border shadow-2xl shadow-black/20">
+            <img
+              src="/app-screenshot.png"
+              alt="Playwright Test Studio showing a plain-English test script with run results"
+              className="w-full block"
+            />
           </div>
         </div>
       </section>
@@ -253,8 +266,7 @@ const HomePage = () => {
               How it Works
             </h2>
             <p className="text-muted-foreground text-lg">
-              A seamless workflow that bridges the gap between human intent and
-              browser automation.
+              Four steps, no configuration files, no selectors to maintain.
             </p>
           </div>
 
@@ -348,13 +360,15 @@ const HomePage = () => {
 
               <div className="space-y-4">
                 <a
-                  href="#"
+                  href="https://github.com/baudehlo/playwright-test-studio/blob/main/README.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center justify-between p-4 bg-background rounded-xl border border-border hover:border-primary/50 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
                     <BookOpenIcon className="w-5 h-5 text-primary" />
                     <span className="font-medium text-foreground">
-                      Full Documentation
+                      README
                     </span>
                   </div>
                   <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors group-hover:translate-x-1" />
@@ -392,6 +406,33 @@ const HomePage = () => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Bottom CTA */}
+      <section className="py-24 border-t border-border">
+        <div className="section-container text-center max-w-2xl mx-auto">
+          <img
+            src="/app-icon.png"
+            alt=""
+            className="w-12 h-12 rounded-xl mx-auto mb-6"
+          />
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4 text-foreground">
+            Ready to stop maintaining selectors?
+          </h2>
+          <p className="text-muted-foreground mb-8">
+            Download the app, paste an API key, write a sentence. That's it.
+          </p>
+          <Button size="lg" className="h-12 px-10 text-base shadow-lg shadow-primary/20" asChild>
+            <a
+              href="https://github.com/baudehlo/playwright-test-studio/releases"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Download className="w-5 h-5 mr-2" />
+              Download Playwright Test Studio
+            </a>
+          </Button>
         </div>
       </section>
     </div>

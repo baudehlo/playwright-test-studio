@@ -123,6 +123,9 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  .counter-reset-step {
+    counter-reset: step;
+  }
   .step-counter {
     counter-increment: step;
   }
