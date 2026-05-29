@@ -1,4 +1,4 @@
-import { Bug, DownloadCloud, FileText, Github, Sparkles } from 'lucide-react';
+import { Bug, DownloadCloud, FileText, Github } from 'lucide-react';
 import React from 'react';
 
 const Footer = () => {
@@ -10,9 +10,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2.5 mb-6">
-              <div className="bg-primary p-1.5 rounded-md">
-                <Sparkles className="w-5 h-5 text-primary-foreground" />
-              </div>
+              <img src="/app-icon.png" alt="" className="w-9 h-9 rounded-xl" />
               <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
                 Playwright Test Studio
               </span>

@@ -2,28 +2,21 @@ import { motion } from 'framer-motion';
 import {
   AlertCircle,
   ArrowRight,
-  Bot,
   Braces,
-  CheckCircle2,
   Code2,
   Download,
   FileText,
   FolderTree,
-  Github,
   History,
   Image as ImageIcon,
   Laptop,
-  Layout,
   Settings,
   Sparkles,
-  XCircle,
 } from 'lucide-react';
 import React from 'react';
 import AIProviderBadge from '@/components/AIProviderBadge.jsx';
 import FeatureCard from '@/components/FeatureCard.jsx';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 
 const HomePage = () => {
   const features = [
@@ -111,57 +104,23 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors">
       {/* Hero Section */}
-      <section
-        id="home"
-        className="relative pt-24 pb-32 lg:pt-32 lg:pb-40 overflow-hidden"
-      >
-        <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1587637721784-024d2b51e1dd?auto=format&fit=crop&q=80"
-            alt="Code editor background with soft lighting"
-            className="w-full h-full object-cover opacity-5 dark:opacity-20 transition-opacity"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background to-background"></div>
-        </div>
-
-        <div className="section-container relative z-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="max-w-4xl mx-auto"
-          >
-            <div className="flex flex-wrap gap-3 justify-center items-center mb-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                <Sparkles className="w-4 h-4" />
-                <span>AI-Powered Browser Automation</span>
-              </div>
-              <Badge
-                variant="outline"
-                className="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors flex items-center gap-1.5 px-3 py-1"
-              >
-                <Github className="w-3.5 h-3.5" />
-                <span>Open Source</span>
-              </Badge>
-              <Badge
-                variant="outline"
-                className="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-1.5 px-3 py-1"
-              >
-                <Layout className="w-3.5 h-3.5" />
-                <span>Inspired by Postman</span>
-              </Badge>
-            </div>
-
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 text-balance gradient-heading">
-              Write Tests in Plain English, <br className="hidden md:block" />
-              <span className="text-primary">No Coding Required.</span>
+      <section id="home" className="pt-20 pb-24 lg:pt-28 lg:pb-32">
+        <div className="section-container text-center">
+          <div className="max-w-4xl mx-auto">
+            <img
+              src="/app-icon.png"
+              alt="Playwright Test Studio"
+              className="w-20 h-20 rounded-2xl mx-auto mb-8 shadow-xl"
+            />
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 text-balance text-foreground">
+              Browser test automation<br className="hidden md:block" />
+              in plain English.
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-              Playwright Test Studio translates your natural language
-              instructions into robust, automated browser tests. Featuring a
-              Postman-inspired intuitive interface, you can effortlessly test
-              local environments and production apps alike.
+              Write what the browser should do. Playwright Test Studio uses AI
+              to execute it against a real browser — including localhost and
+              internal services, directly from your desktop.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -176,7 +135,7 @@ const HomePage = () => {
                   rel="noopener noreferrer"
                 >
                   <Download className="w-5 h-5 mr-2" />
-                  Download Now
+                  Download for macOS, Windows, Linux
                 </a>
               </Button>
               <Button
@@ -191,84 +150,36 @@ const HomePage = () => {
                 </a>
               </Button>
             </div>
-
-            <p className="mt-6 text-sm text-muted-foreground">
-              Available for macOS, Windows, and Linux
-            </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Problem/Solution Section */}
-      <section className="py-24 bg-secondary/50 border-y border-border/50 transition-colors">
+      {/* Differentiators */}
+      <section className="py-20 border-y border-border/50">
         <div className="section-container">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight text-foreground">
-              Why Playwright Test Studio?
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              Traditional QA automation forces a compromise between speed and
-              reliability. We fix that.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8 lg:gap-12 max-w-5xl mx-auto">
-            <Card className="bg-destructive/5 border-destructive/20 shadow-none hover:border-destructive/30 transition-colors">
-              <CardContent className="p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <XCircle className="w-8 h-8 text-destructive" />
-                  <h3 className="text-2xl font-semibold text-foreground">
-                    The Old Way
-                  </h3>
-                </div>
-                <ul className="space-y-4">
-                  {[
-                    'Writing code requires specialized QA engineers',
-                    'Tests break when developers change CSS classes',
-                    "Cloud testing tools can't reach your localhost environment",
-                    'Reviewing test failures means digging through complex code logs',
-                  ].map((item, i) => (
-                    <li
-                      key={i}
-                      className="flex items-start gap-3 text-muted-foreground"
-                    >
-                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-destructive flex-shrink-0" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-primary/5 border-primary/20 shadow-none relative overflow-hidden hover:border-primary/30 transition-colors">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Sparkles className="w-24 h-24 text-primary" />
-              </div>
-              <CardContent className="p-8 relative z-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <CheckCircle2 className="w-8 h-8 text-primary" />
-                  <h3 className="text-2xl font-semibold text-foreground">
-                    The New Way
-                  </h3>
-                </div>
-                <ul className="space-y-4">
-                  {[
-                    'Anyone can write tests using plain English sentences',
-                    'AI adapts to UI changes automatically',
-                    'Desktop application easily accesses your local and internal network',
-                    'Visual run history and step-by-step screenshots make triage instant',
-                  ].map((item, i) => (
-                    <li
-                      key={i}
-                      className="flex items-start gap-3 text-foreground font-medium"
-                    >
-                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+          <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto">
+            <div>
+              <h3 className="text-base font-semibold mb-2 text-foreground">Works on localhost</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                It's a native desktop app with direct access to services on your
+                machine — no cloud VMs, no tunnels, no port forwarding.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-base font-semibold mb-2 text-foreground">No selector maintenance</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Tests describe intent, not DOM structure. The AI resolves
+                elements at runtime, so tests don't break when developers rename
+                classes or restructure markup.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-base font-semibold mb-2 text-foreground">Bring your own model</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Plug in an API key for OpenAI, Anthropic, Groq, or Azure.
+                Switch models any time to trade off speed, cost, and capability.
+              </p>
+            </div>
           </div>
         </div>
       </section>
