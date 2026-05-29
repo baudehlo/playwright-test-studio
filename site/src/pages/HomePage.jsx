@@ -157,7 +157,7 @@ const HomePage = () => {
       {/* App screenshot */}
       <section className="pb-16">
         <div className="section-container">
-          <div className="max-w-4xl mx-auto rounded-xl overflow-hidden border border-border shadow-2xl shadow-black/20">
+          <div className="rounded-xl overflow-hidden border border-border shadow-2xl shadow-black/20">
             <img
               src="/app-screenshot.png"
               alt="Playwright Test Studio showing a plain-English test script with run results"
