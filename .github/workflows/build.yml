@@ -225,7 +225,7 @@ jobs:
           set -euo pipefail
           if ! aws s3api head-bucket --bucket "$S3_BUCKET" 2>/dev/null; then
             echo "Creating bucket $S3_BUCKET"
-            REGION=$(aws configure get region)
+            REGION="${AWS_REGION}"
             if [ "$REGION" = "us-east-1" ]; then
               aws s3api create-bucket --bucket "$S3_BUCKET"
             else
@@ -314,7 +314,7 @@ jobs:
           SITE_DOMAIN: ${{ secrets.SITE_DOMAIN }}
         run: |
           set -euo pipefail
-          REGION=$(aws configure get region)
+          REGION="${AWS_REGION}"
           S3_ORIGIN_DOMAIN="${S3_BUCKET}.s3.${REGION}.amazonaws.com"
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
