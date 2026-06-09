@@ -96,12 +96,16 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          set -euo pipefail
-          # tauri.conf.json
-          sed -i.bak "s/\"version\": \"[^\"]*\"/\"version\": \"${VERSION}\"/" src-tauri/tauri.conf.json
-          # Cargo.toml (first occurrence is the package version)
-          sed -i.bak "0,/^version = \"[^\"]*\"/{s/^version = \"[^\"]*\"/version = \"${VERSION}\"/}" src-tauri/Cargo.toml
-          rm -f src-tauri/tauri.conf.json.bak src-tauri/Cargo.toml.bak
+          node -e "
+            const fs = require('fs');
+            const v = process.env.VERSION;
+            const conf = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+            conf.version = v;
+            fs.writeFileSync('src-tauri/tauri.conf.json', JSON.stringify(conf, null, 2) + '\n');
+            let cargo = fs.readFileSync('src-tauri/Cargo.toml', 'utf8');
+            cargo = cargo.replace(/^version = \"[^\"]*\"/m, 'version = \"' + v + '\"');
+            fs.writeFileSync('src-tauri/Cargo.toml', cargo);
+          "
       - run: npm ci
       - run: cd runner && npm ci && npm run build
       - name: Download bundled Node.js (macOS arm64)
