@@ -997,6 +997,17 @@ fn run_test(
                                     if let Some(event_type) = event.get("type").and_then(|v| v.as_str()) {
                                         if event_type == "complete" || event_type == "error" {
                                             saw_terminal_event.store(true, std::sync::atomic::Ordering::Relaxed);
+                                            // Persist the run to the index before notifying the
+                                            // frontend so that loadRuns() called by the complete
+                                            // handler already finds the new entry.
+                                            let run_json_path = run_dir.join("run.json");
+                                            if run_json_path.exists() {
+                                                if let Ok(data) = fs::read_to_string(&run_json_path) {
+                                                    if let Ok(run) = serde_json::from_str::<Run>(&data) {
+                                                        let _ = save_run(app_handle.clone(), test_id.clone(), run);
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                     let _ = app_handle.emit("run-event", event);
