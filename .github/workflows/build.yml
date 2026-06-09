@@ -91,6 +91,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - name: Update version in config files
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          # tauri.conf.json
+          sed -i.bak "s/\"version\": \"[^\"]*\"/\"version\": \"${VERSION}\"/" src-tauri/tauri.conf.json
+          # Cargo.toml (first occurrence is the package version)
+          sed -i.bak "0,/^version = \"[^\"]*\"/{s/^version = \"[^\"]*\"/version = \"${VERSION}\"/}" src-tauri/Cargo.toml
+          rm -f src-tauri/tauri.conf.json.bak src-tauri/Cargo.toml.bak
       - run: npm ci
       - run: cd runner && npm ci && npm run build
       - name: Download bundled Node.js (macOS arm64)
