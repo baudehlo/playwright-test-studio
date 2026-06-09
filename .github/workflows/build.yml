@@ -98,13 +98,18 @@ jobs:
         run: |
           node -e "
             const fs = require('fs');
-            const v = process.env.VERSION;
+            // Coerce input to valid semver (e.g. '0.09' -> '0.9.0', '1.2' -> '1.2.0')
+            let v = process.env.VERSION.replace(/^v/, '');
+            const parts = v.split('.').map(p => String(parseInt(p, 10)));
+            while (parts.length < 3) parts.push('0');
+            v = parts.join('.');
             const conf = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
             conf.version = v;
             fs.writeFileSync('src-tauri/tauri.conf.json', JSON.stringify(conf, null, 2) + '\n');
             let cargo = fs.readFileSync('src-tauri/Cargo.toml', 'utf8');
             cargo = cargo.replace(/^version = \"[^\"]*\"/m, 'version = \"' + v + '\"');
             fs.writeFileSync('src-tauri/Cargo.toml', cargo);
+            console.log('Version set to', v);
           "
       - run: npm ci
       - run: cd runner && npm ci && npm run build
